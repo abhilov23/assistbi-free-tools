@@ -3,27 +3,60 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Upload, FileText, Download, AlertCircle } from "lucide-react";
+import { Upload, FileText, Download, AlertCircle, Eye } from "lucide-react";
+import { PDFDocument } from "pdf-lib";
 
 const PDFConverter = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [pdfInfo, setPdfInfo] = useState<{pages: number, size: string} | null>(null);
+  const [conversionType, setConversionType] = useState<'word' | 'excel' | null>(null);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
+      
+      // Extract PDF info for preview
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const pageCount = pdfDoc.getPageCount();
+        const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
+        
+        setPdfInfo({
+          pages: pageCount,
+          size: fileSizeMB
+        });
+      } catch (error) {
+        console.error('Error reading PDF:', error);
+        setPdfInfo(null);
+      }
     }
   };
 
-  const handleConvert = () => {
+  const handleConvert = (type: 'word' | 'excel') => {
     if (!file) return;
     setIsConverting(true);
-    // Simulate conversion process
+    setConversionType(type);
+    
+    // Simulate conversion process with realistic timing
     setTimeout(() => {
       setIsConverting(false);
-      alert("Conversion complete! (Demo mode - no actual conversion performed)");
-    }, 2000);
+      
+      // Create a demo download for illustration
+      const element = document.createElement('a');
+      const demoContent = type === 'word' 
+        ? `Demo Word Document converted from ${file.name}\n\nThis would contain the extracted text and formatting from your PDF.`
+        : `Demo Excel Spreadsheet converted from ${file.name}\n\nThis would contain tables and data extracted from your PDF.`;
+      
+      const blob = new Blob([demoContent], { type: 'text/plain' });
+      element.href = URL.createObjectURL(blob);
+      element.download = `converted-${file.name.replace('.pdf', '')}.${type === 'word' ? 'txt' : 'csv'}`;
+      element.click();
+      
+      setConversionType(null);
+    }, 3000);
   };
 
   return (
@@ -88,38 +121,61 @@ const PDFConverter = () => {
 
               {/* Selected File */}
               {file && (
-                <div className="bg-muted/50 rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-medium text-foreground">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+                <div className="bg-muted/50 rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-8 w-8 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground">{file.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {pdfInfo ? `${pdfInfo.pages} pages • ${pdfInfo.size} MB` : `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      onClick={() => {
+                        setFile(null);
+                        setPdfInfo(null);
+                      }}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Remove
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => setFile(null)}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    Remove
-                  </Button>
+                  
+                  {pdfInfo && (
+                    <div className="grid grid-cols-3 gap-4 p-3 bg-background/50 rounded-lg">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-primary">{pdfInfo.pages}</div>
+                        <div className="text-xs text-muted-foreground">Pages</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-secondary">{pdfInfo.size}</div>
+                        <div className="text-xs text-muted-foreground">MB</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-accent">PDF</div>
+                        <div className="text-xs text-muted-foreground">Ready</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Convert Options */}
               {file && (
                 <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Choose Output Format</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
-                      onClick={handleConvert}
+                      onClick={() => handleConvert('word')}
                       disabled={isConverting}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 h-12"
                       variant="default"
                     >
-                      {isConverting ? (
-                        "Converting..."
+                      {isConverting && conversionType === 'word' ? (
+                        "Converting to Word..."
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
@@ -128,13 +184,13 @@ const PDFConverter = () => {
                       )}
                     </Button>
                     <Button
-                      onClick={handleConvert}
+                      onClick={() => handleConvert('excel')}
                       disabled={isConverting}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 h-12"
                       variant="secondary"
                     >
-                      {isConverting ? (
-                        "Converting..."
+                      {isConverting && conversionType === 'excel' ? (
+                        "Converting to Excel..."
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
@@ -142,6 +198,19 @@ const PDFConverter = () => {
                         </>
                       )}
                     </Button>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="font-medium text-blue-800 dark:text-blue-200 mb-1">Backend Integration Required</p>
+                        <p className="text-blue-700 dark:text-blue-300">
+                          Full PDF conversion requires backend processing with OCR and document analysis. 
+                          Connect to Supabase to enable real PDF to Word/Excel conversion with proper formatting, tables, and images.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
