@@ -5,6 +5,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Upload, FileText, Download, AlertCircle, Eye } from "lucide-react";
 import { PDFDocument } from "pdf-lib";
+import * as XLSX from 'xlsx';
 
 const PDFConverter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -44,16 +45,58 @@ const PDFConverter = () => {
     setTimeout(() => {
       setIsConverting(false);
       
-      // Create a demo download for illustration
-      const element = document.createElement('a');
-      const demoContent = type === 'word' 
-        ? `Demo Word Document converted from ${file.name}\n\nThis would contain the extracted text and formatting from your PDF.`
-        : `Demo Excel Spreadsheet converted from ${file.name}\n\nThis would contain tables and data extracted from your PDF.`;
+      const fileName = file.name.replace('.pdf', '');
       
-      const blob = new Blob([demoContent], { type: 'text/plain' });
-      element.href = URL.createObjectURL(blob);
-      element.download = `converted-${file.name.replace('.pdf', '')}.${type === 'word' ? 'txt' : 'csv'}`;
-      element.click();
+      if (type === 'word') {
+        // Create RTF content that Word can open
+        const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}
+\\f0\\fs24 
+\\b Demo Word Document\\b0\\par
+\\par
+Converted from: ${file.name}\\par
+\\par
+This is a demonstration of PDF to Word conversion.\\par
+\\par
+In a full implementation, this would contain:\\par
+• Extracted text from the PDF\\par
+• Preserved formatting and layout\\par
+• Tables and images from the original document\\par
+• Proper paragraph structure\\par
+\\par
+\\b Note:\\b0 Connect to Supabase for advanced OCR and real document conversion.
+}`;
+        
+        const blob = new Blob([rtfContent], { type: 'application/rtf' });
+        const element = document.createElement('a');
+        element.href = URL.createObjectURL(blob);
+        element.download = `${fileName}.rtf`;
+        element.click();
+      } else {
+        // Create Excel file using xlsx library
+        const worksheetData = [
+          ['PDF Conversion Demo'],
+          [''],
+          ['Original File:', file.name],
+          ['Conversion Date:', new Date().toLocaleDateString()],
+          ['Pages:', pdfInfo?.pages || 'Unknown'],
+          ['File Size (MB):', pdfInfo?.size || 'Unknown'],
+          [''],
+          ['Sample Data Table:'],
+          ['Column A', 'Column B', 'Column C'],
+          ['Data 1', 'Data 2', 'Data 3'],
+          ['Row 2', 'Content B2', 'Content C2'],
+          ['Row 3', 'Content B3', 'Content C3'],
+          [''],
+          ['Note:', 'Connect to Supabase for real PDF data extraction']
+        ];
+        
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'PDF Conversion');
+        
+        // Generate Excel file and download
+        XLSX.writeFile(workbook, `${fileName}.xlsx`);
+      }
       
       setConversionType(null);
     }, 3000);
