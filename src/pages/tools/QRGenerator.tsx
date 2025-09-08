@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,16 +12,44 @@ import { QrCode, Download, Link as LinkIcon, Type, Phone } from "lucide-react";
 const QRGenerator = () => {
   const [qrType, setQrType] = useState<"url" | "text" | "phone">("url");
   const [content, setContent] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!content.trim()) return;
     setIsGenerating(true);
-    // Simulate QR generation
-    setTimeout(() => {
+    
+    try {
+      let qrContent = content;
+      if (qrType === "phone") {
+        qrContent = `tel:${content}`;
+      } else if (qrType === "url" && !content.startsWith("http")) {
+        qrContent = `https://${content}`;
+      }
+      
+      const url = await QRCode.toDataURL(qrContent, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeUrl(url);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    } finally {
       setIsGenerating(false);
-      alert("QR Code generated! (Demo mode - no actual QR code generated)");
-    }, 1000);
+    }
+  };
+
+  const downloadQR = (format: 'png' | 'svg') => {
+    if (!qrCodeUrl) return;
+    
+    const link = document.createElement('a');
+    link.download = `qrcode.${format}`;
+    link.href = qrCodeUrl;
+    link.click();
   };
 
   return (
@@ -144,28 +173,52 @@ const QRGenerator = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="aspect-square bg-muted/30 rounded-xl flex items-center justify-center border-2 border-dashed border-border">
-                <div className="text-center space-y-4">
-                  <QrCode className="h-16 w-16 text-muted-foreground mx-auto" />
-                  <div>
-                    <p className="text-foreground font-medium">QR Code Preview</p>
-                    <p className="text-muted-foreground text-sm">
-                      Generate a QR code to see preview
-                    </p>
+              {qrCodeUrl ? (
+                <div className="space-y-6">
+                  <div className="flex justify-center">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Generated QR Code" 
+                      className="rounded-lg border-2 border-border"
+                    />
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => downloadQR('png')} 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PNG
+                    </Button>
+                    <Button 
+                      onClick={() => downloadQR('png')} 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download SVG
+                    </Button>
+                  </div>
+                  
+                  <div className="text-center text-sm text-muted-foreground">
+                    Content: {content}
                   </div>
                 </div>
-              </div>
-              
-              <div className="mt-6 space-y-3">
-                <Button variant="outline" disabled className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PNG
-                </Button>
-                <Button variant="outline" disabled className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download SVG
-                </Button>
-              </div>
+              ) : (
+                <div className="aspect-square bg-muted/30 rounded-xl flex items-center justify-center border-2 border-dashed border-border">
+                  <div className="text-center space-y-4">
+                    <QrCode className="h-16 w-16 text-muted-foreground mx-auto" />
+                    <div>
+                      <p className="text-foreground font-medium">QR Code Preview</p>
+                      <p className="text-muted-foreground text-sm">
+                        Generate a QR code to see preview
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

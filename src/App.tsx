@@ -8,6 +8,11 @@ import NotFound from "./pages/NotFound";
 import PDFConverter from "./pages/tools/PDFConverter";
 import QRGenerator from "./pages/tools/QRGenerator";
 import InvoiceGenerator from "./pages/tools/InvoiceGenerator";
+import PDFExporter from "./pages/tools/PDFExporter";
+import URLShortener from "./pages/tools/URLShortener";
+import DocumentSummarizer from "./pages/tools/DocumentSummarizer";
+import GrammarChecker from "./pages/tools/GrammarChecker";
+import InvoiceOCR from "./pages/tools/InvoiceOCR";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +27,11 @@ const App = () => (
           <Route path="/tools/pdf-converter" element={<PDFConverter />} />
           <Route path="/tools/qr-generator" element={<QRGenerator />} />
           <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
+          <Route path="/tools/pdf-exporter" element={<PDFExporter />} />
+          <Route path="/tools/url-shortener" element={<URLShortener />} />
+          <Route path="/tools/document-summarizer" element={<DocumentSummarizer />} />
+          <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
+          <Route path="/tools/invoice-ocr" element={<InvoiceOCR />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
