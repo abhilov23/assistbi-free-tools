@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import PDFConverter from "./pages/tools/PDFConverter";
+import QRGenerator from "./pages/tools/QRGenerator";
+import InvoiceGenerator from "./pages/tools/InvoiceGenerator";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +19,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/tools/pdf-converter" element={<PDFConverter />} />
+          <Route path="/tools/qr-generator" element={<QRGenerator />} />
+          <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
