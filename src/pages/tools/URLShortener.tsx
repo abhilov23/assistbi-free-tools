@@ -121,9 +121,9 @@ const URLShortener = () => {
                     Demo Mode Notice
                   </h3>
                   <p className="text-muted-foreground">
-                    This is a demonstration interface. To enable full URL shortening with 
-                    custom domains, click analytics, and link management, you'll need to 
-                    connect a database backend.
+                    This tool requires backend integration to store URL mappings and provide analytics. 
+                    To enable full URL shortening functionality, connect your project to Supabase using 
+                    the green button in the top right corner.
                   </p>
                 </div>
               </div>

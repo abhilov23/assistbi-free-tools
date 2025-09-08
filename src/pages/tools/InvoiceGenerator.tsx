@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Receipt, Plus, Trash2, Download, Eye } from "lucide-react";
+import jsPDF from "jspdf";
 
 interface InvoiceItem {
   id: string;
@@ -18,6 +19,11 @@ interface InvoiceItem {
 const InvoiceGenerator = () => {
   const [companyName, setCompanyName] = useState("");
   const [clientName, setClientName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
+  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: "1", description: "", quantity: 1, rate: 0 }
   ]);
@@ -48,12 +54,86 @@ const InvoiceGenerator = () => {
     return items.reduce((total, item) => total + (item.quantity * item.rate), 0);
   };
 
+  const generatePDF = () => {
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    
+    // Header
+    pdf.setFontSize(24);
+    pdf.setTextColor(40, 40, 40);
+    pdf.text("INVOICE", pageWidth / 2, 30, { align: 'center' });
+    
+    // Company Info
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(companyName || "Your Company", 20, 60);
+    pdf.setFont(undefined, 'normal');
+    pdf.setFontSize(10);
+    if (companyAddress) {
+      const lines = companyAddress.split('\n');
+      lines.forEach((line, index) => {
+        pdf.text(line, 20, 70 + (index * 5));
+      });
+    }
+    
+    // Invoice Details
+    pdf.setFontSize(10);
+    pdf.text(`Invoice #: ${invoiceNumber}`, 20, 100);
+    pdf.text(`Date: ${issueDate}`, 20, 110);
+    pdf.text(`Due: ${dueDate}`, 20, 120);
+    
+    // Client Info
+    pdf.text("Bill To:", 120, 60);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(clientName || "Client Name", 120, 70);
+    pdf.setFont(undefined, 'normal');
+    if (clientAddress) {
+      const lines = clientAddress.split('\n');
+      lines.forEach((line, index) => {
+        pdf.text(line, 120, 80 + (index * 5));
+      });
+    }
+    
+    // Items Table Header
+    const startY = 140;
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(15, startY, pageWidth - 30, 10, 'F');
+    pdf.setFont(undefined, 'bold');
+    pdf.text("Description", 20, startY + 7);
+    pdf.text("Qty", 120, startY + 7);
+    pdf.text("Rate", 140, startY + 7);
+    pdf.text("Total", 170, startY + 7);
+    
+    // Items
+    pdf.setFont(undefined, 'normal');
+    let currentY = startY + 15;
+    
+    items.forEach((item, index) => {
+      if (item.description) {
+        pdf.text(item.description, 20, currentY);
+        pdf.text(item.quantity.toString(), 120, currentY);
+        pdf.text(`$${item.rate.toFixed(2)}`, 140, currentY);
+        pdf.text(`$${(item.quantity * item.rate).toFixed(2)}`, 170, currentY);
+        currentY += 10;
+      }
+    });
+    
+    // Total
+    const total = calculateTotal();
+    pdf.setFont(undefined, 'bold');
+    pdf.text(`Total: $${total.toFixed(2)}`, 170, currentY + 10);
+    
+    return pdf;
+  };
+
   const handlePreview = () => {
-    alert("Invoice preview would open here (Demo mode)");
+    const pdf = generatePDF();
+    window.open(pdf.output('bloburl'), '_blank');
   };
 
   const handleDownload = () => {
-    alert("Invoice PDF download would start here (Demo mode)");
+    const pdf = generatePDF();
+    pdf.save(`invoice-${invoiceNumber}.pdf`);
   };
 
   return (
@@ -108,6 +188,8 @@ const InvoiceGenerator = () => {
                         id="business-address"
                         placeholder="123 Business St, City, State 12345"
                         rows={3}
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
                       />
                     </div>
                   </div>
@@ -131,6 +213,8 @@ const InvoiceGenerator = () => {
                         id="client-address"
                         placeholder="123 Client St, City, State 12345"
                         rows={3}
+                        value={clientAddress}
+                        onChange={(e) => setClientAddress(e.target.value)}
                       />
                     </div>
                   </div>
@@ -144,7 +228,8 @@ const InvoiceGenerator = () => {
                   <Input
                     id="invoice-number"
                     placeholder="INV-001"
-                    defaultValue="INV-001"
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
                   />
                 </div>
                 <div>
@@ -152,7 +237,8 @@ const InvoiceGenerator = () => {
                   <Input
                     id="issue-date"
                     type="date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
+                    value={issueDate}
+                    onChange={(e) => setIssueDate(e.target.value)}
                   />
                 </div>
                 <div>
@@ -160,6 +246,8 @@ const InvoiceGenerator = () => {
                   <Input
                     id="due-date"
                     type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
                   />
                 </div>
               </div>

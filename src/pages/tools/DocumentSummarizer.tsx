@@ -173,9 +173,9 @@ const DocumentSummarizer = () => {
                     Demo Mode Notice
                   </h3>
                   <p className="text-muted-foreground">
-                    This is a demonstration interface. To enable full AI-powered document 
-                    summarization with advanced natural language processing, you'll need 
-                    to connect AI services through a backend integration.
+                    This tool requires AI integration to analyze and summarize documents. 
+                    To enable full AI-powered document summarization, connect your project to 
+                    Supabase using the green button in the top right corner.
                   </p>
                 </div>
               </div>

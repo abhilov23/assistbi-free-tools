@@ -248,9 +248,9 @@ const InvoiceOCR = () => {
                     Demo Mode Notice
                   </h3>
                   <p className="text-muted-foreground">
-                    This is a demonstration interface. To enable full OCR processing 
-                    with advanced machine learning models for accurate data extraction, 
-                    you'll need to connect OCR services through a backend integration.
+                    This tool requires OCR (Optical Character Recognition) integration to extract data from scanned invoices. 
+                    To enable full invoice data extraction functionality, connect your project to 
+                    Supabase using the green button in the top right corner.
                   </p>
                 </div>
               </div>

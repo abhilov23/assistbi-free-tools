@@ -196,9 +196,9 @@ const GrammarChecker = () => {
                     Demo Mode Notice
                   </h3>
                   <p className="text-muted-foreground">
-                    This is a demonstration interface. To enable full grammar checking 
-                    with advanced language processing and real-time suggestions, you'll 
-                    need to connect grammar checking services through a backend integration.
+                    This tool requires AI integration to check grammar and provide writing suggestions. 
+                    To enable full grammar checking functionality, connect your project to 
+                    Supabase using the green button in the top right corner.
                   </p>
                 </div>
               </div>
