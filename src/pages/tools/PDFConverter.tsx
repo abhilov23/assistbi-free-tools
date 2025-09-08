@@ -37,17 +37,24 @@ const PDFConverter = () => {
   };
 
   const handleConvert = (type: 'word' | 'excel') => {
-    if (!file) return;
+    console.log('handleConvert called with type:', type);
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
     setIsConverting(true);
     setConversionType(type);
     
     // Simulate conversion process with realistic timing
     setTimeout(() => {
+      console.log('Starting conversion for type:', type);
       setIsConverting(false);
       
       const fileName = file.name.replace('.pdf', '');
+      console.log('File name for conversion:', fileName);
       
       if (type === 'word') {
+        console.log('Creating Word/RTF file');
         // Create RTF content that Word can open
         const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}
 \\f0\\fs24 
@@ -70,8 +77,10 @@ In a full implementation, this would contain:\\par
         const element = document.createElement('a');
         element.href = URL.createObjectURL(blob);
         element.download = `${fileName}.rtf`;
+        console.log('Downloading RTF file:', `${fileName}.rtf`);
         element.click();
       } else {
+        console.log('Creating Excel file using XLSX library');
         // Create Excel file using xlsx library
         const worksheetData = [
           ['PDF Conversion Demo'],
@@ -95,7 +104,9 @@ In a full implementation, this would contain:\\par
         XLSX.utils.book_append_sheet(workbook, worksheet, 'PDF Conversion');
         
         // Generate Excel file and download
+        console.log('Downloading Excel file:', `${fileName}.xlsx`);
         XLSX.writeFile(workbook, `${fileName}.xlsx`);
+        console.log('Excel file download completed');
       }
       
       setConversionType(null);
