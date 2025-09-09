@@ -141,8 +141,7 @@ const PDFConverter = () => {
         });
 
         // Generate and download DOCX file
-        const buffer = await Packer.toBuffer(doc);
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        const blob = await Packer.toBlob(doc);
         const element = document.createElement('a');
         element.href = URL.createObjectURL(blob);
         element.download = `${fileName}.docx`;
