@@ -7,6 +7,8 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Upload, Download, FileText, AlertCircle, Eye, Type } from "lucide-react";
 import jsPDF from "jspdf";
+import * as XLSX from 'xlsx';
+import mammoth from 'mammoth';
 
 const PDFExporter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -14,8 +16,9 @@ const PDFExporter = () => {
   const [textContent, setTextContent] = useState("");
   const [activeTab, setActiveTab] = useState<'file' | 'text'>('file');
   const [fileInfo, setFileInfo] = useState<{type: string, size: string} | null>(null);
+  const [extractedContent, setExtractedContent] = useState<string>('');
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -28,6 +31,34 @@ const PDFExporter = () => {
         type: fileType,
         size: fileSizeMB
       });
+
+      // Extract content from the file
+      try {
+        let content = '';
+        
+        if (fileType === 'DOCX') {
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          content = result.value;
+        } else if (fileType === 'XLSX' || fileType === 'XLS') {
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+          const sheetNames = workbook.SheetNames;
+          
+          content = sheetNames.map(sheetName => {
+            const worksheet = workbook.Sheets[sheetName];
+            const csvData = XLSX.utils.sheet_to_csv(worksheet);
+            return `Sheet: ${sheetName}\n${csvData}\n\n`;
+          }).join('');
+        } else {
+          content = `File uploaded: ${selectedFile.name}\nContent extraction available for DOCX and XLSX files.`;
+        }
+        
+        setExtractedContent(content);
+      } catch (error) {
+        console.error('Error extracting file content:', error);
+        setExtractedContent(`Error extracting content from ${selectedFile.name}. File may be corrupted or password protected.`);
+      }
     }
   };
 
@@ -77,26 +108,54 @@ const PDFExporter = () => {
     if (!file) return;
     setIsExporting(true);
     
-    // Simulate file conversion process
+    // Create PDF with actual file content
     setTimeout(() => {
       setIsExporting(false);
       
-      // Create a demo PDF with file info
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - 2 * margin;
       
+      // Header
       pdf.setFontSize(20);
-      pdf.text("Document Conversion Demo", pageWidth / 2, 30, { align: 'center' });
+      pdf.setFont(undefined, 'bold');
+      pdf.text(`Converted: ${file.name}`, pageWidth / 2, 30, { align: 'center' });
       
+      // File information
       pdf.setFontSize(12);
-      pdf.text(`Original file: ${file.name}`, 20, 60);
-      pdf.text(`File type: ${fileInfo?.type}`, 20, 75);
-      pdf.text(`File size: ${fileInfo?.size} MB`, 20, 90);
-      pdf.text("Conversion date: " + new Date().toLocaleDateString(), 20, 105);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Original file: ${file.name}`, margin, 50);
+      pdf.text(`File type: ${fileInfo?.type}`, margin, 65);
+      pdf.text(`File size: ${fileInfo?.size} MB`, margin, 80);
+      pdf.text(`Conversion date: ${new Date().toLocaleDateString()}`, margin, 95);
       
+      // Content header
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text("Extracted Content:", margin, 120);
+      
+      // Add extracted content
       pdf.setFontSize(10);
-      pdf.text("Note: This is a demo conversion. Full document conversion", 20, 130);
-      pdf.text("with preserved formatting requires backend processing.", 20, 140);
+      pdf.setFont(undefined, 'normal');
+      
+      if (extractedContent) {
+        const lines = pdf.splitTextToSize(extractedContent, maxWidth);
+        let yPosition = 135;
+        const lineHeight = 5;
+        
+        for (let i = 0; i < lines.length; i++) {
+          if (yPosition + lineHeight > pageHeight - margin) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          pdf.text(lines[i], margin, yPosition);
+          yPosition += lineHeight;
+        }
+      } else {
+        pdf.text("No content could be extracted from this file.", margin, 135);
+      }
       
       pdf.save(`converted-${file.name.replace(/\.[^/.]+$/, "")}.pdf`);
     }, 2500);
