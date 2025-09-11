@@ -7,7 +7,7 @@ import {
   Link, 
   FileCheck, 
   CheckCircle, 
-  Scan 
+  User 
 } from "lucide-react";
 
 const toolsData = [
@@ -61,10 +61,10 @@ const toolsData = [
     color: "secondary",
   },
   {
-    title: "Invoice OCR",
-    description: "Extract data from scanned invoices and receipts automatically.",
-    icon: Scan,
-    href: "/tools/invoice-ocr",
+    title: "Resume Builder",
+    description: "Create professional resumes with customizable templates and download as PDF.",
+    icon: User,
+    href: "/tools/resume-builder",
     color: "accent",
   },
 ];

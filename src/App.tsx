@@ -12,7 +12,7 @@ import PDFExporter from "./pages/tools/PDFExporter";
 import URLShortener from "./pages/tools/URLShortener";
 import DocumentSummarizer from "./pages/tools/DocumentSummarizer";
 import GrammarChecker from "./pages/tools/GrammarChecker";
-import InvoiceOCR from "./pages/tools/InvoiceOCR";
+import ResumeBuilder from "./pages/tools/ResumeBuilder";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +31,7 @@ const App = () => (
           <Route path="/tools/url-shortener" element={<URLShortener />} />
           <Route path="/tools/document-summarizer" element={<DocumentSummarizer />} />
           <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
-          <Route path="/tools/invoice-ocr" element={<InvoiceOCR />} />
+          <Route path="/tools/resume-builder" element={<ResumeBuilder />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
