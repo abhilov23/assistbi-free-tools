@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Wrench, Heart, Shield } from "lucide-react";
+import { Heart, Shield } from "lucide-react";
+import assistbiLogo from "@/assets/assistbi-logo.jpg";
 
 const Footer = () => {
   const toolLinks = [
@@ -20,9 +21,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="p-2 bg-gradient-primary rounded-xl shadow-soft">
-                <Wrench className="h-6 w-6 text-white" />
-              </div>
+              <img 
+                src={assistbiLogo} 
+                alt="AssistBi Logo" 
+                className="h-10 w-10 rounded-xl shadow-soft"
+              />
               <div>
                 <span className="text-xl font-bold text-foreground">AssistBi</span>
                 <span className="text-sm text-muted-foreground ml-1">Tools</span>
