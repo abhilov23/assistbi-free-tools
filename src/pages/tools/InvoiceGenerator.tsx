@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Receipt, Plus, Trash2, Download, Eye } from "lucide-react";
+import { Plus, Trash2, Download, Upload } from "lucide-react";
 import jsPDF from "jspdf";
 
 interface InvoiceItem {
@@ -17,16 +18,44 @@ interface InvoiceItem {
 }
 
 const InvoiceGenerator = () => {
-  const [companyName, setCompanyName] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [companyAddress, setCompanyAddress] = useState("");
-  const [clientAddress, setClientAddress] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("INV-001");
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
+  // Basic Invoice Info
+  const [invoiceNumber, setInvoiceNumber] = useState("1");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("");
+  const [poNumber, setPoNumber] = useState("");
+
+  // Company Info (From)
+  const [fromCompany, setFromCompany] = useState("");
+  const [fromAddress, setFromAddress] = useState("");
+  const [fromCityState, setFromCityState] = useState("");
+  const [fromZip, setFromZip] = useState("");
+
+  // Bill To
+  const [billToCompany, setBillToCompany] = useState("");
+  const [billToAddress, setBillToAddress] = useState("");
+  const [billToCityState, setBillToCityState] = useState("");
+  const [billToZip, setBillToZip] = useState("");
+
+  // Ship To
+  const [shipToCompany, setShipToCompany] = useState("");
+  const [shipToAddress, setShipToAddress] = useState("");
+  const [shipToCityState, setShipToCityState] = useState("");
+  const [shipToZip, setShipToZip] = useState("");
+
+  // Items and Calculations
   const [items, setItems] = useState<InvoiceItem[]>([
     { id: "1", description: "", quantity: 1, rate: 0 }
   ]);
+  const [notes, setNotes] = useState("");
+  const [tax, setTax] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [shipping, setShipping] = useState(0);
+
+  // Settings
+  const [theme, setTheme] = useState("classic");
+  const [currency, setCurrency] = useState("USD ($)");
+  const [logo, setLogo] = useState<string | null>(null);
 
   const addItem = () => {
     const newItem: InvoiceItem = {
@@ -50,65 +79,96 @@ const InvoiceGenerator = () => {
     ));
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return items.reduce((total, item) => total + (item.quantity * item.rate), 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const taxAmount = (subtotal * tax) / 100;
+    return subtotal + taxAmount - discount + shipping;
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogo(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const generatePDF = () => {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
     
-    // Header
-    pdf.setFontSize(24);
+    // Header with logo space
+    if (logo) {
+      // Add logo handling here if needed
+    }
+    
+    pdf.setFontSize(32);
     pdf.setTextColor(40, 40, 40);
-    pdf.text("INVOICE", pageWidth / 2, 30, { align: 'center' });
+    pdf.text("INVOICE", pageWidth - 20, 30, { align: 'right' });
+    
+    // Invoice details
+    pdf.setFontSize(10);
+    pdf.text(`# ${invoiceNumber}`, pageWidth - 20, 45, { align: 'right' });
     
     // Company Info
-    pdf.setFontSize(14);
+    pdf.setFontSize(12);
     pdf.setFont(undefined, 'bold');
-    pdf.text(companyName || "Your Company", 20, 60);
+    if (fromCompany) pdf.text(fromCompany, 20, 60);
     pdf.setFont(undefined, 'normal');
     pdf.setFontSize(10);
-    if (companyAddress) {
-      const lines = companyAddress.split('\n');
-      lines.forEach((line, index) => {
-        pdf.text(line, 20, 70 + (index * 5));
-      });
+    let yPos = 70;
+    if (fromAddress) { pdf.text(fromAddress, 20, yPos); yPos += 5; }
+    if (fromCityState) { pdf.text(fromCityState, 20, yPos); yPos += 5; }
+    if (fromZip) { pdf.text(fromZip, 20, yPos); }
+    
+    // Dates
+    pdf.text(`Date: ${date}`, pageWidth - 20, 60, { align: 'right' });
+    if (dueDate) pdf.text(`Due Date: ${dueDate}`, pageWidth - 20, 70, { align: 'right' });
+    if (paymentTerms) pdf.text(`Payment Terms: ${paymentTerms}`, pageWidth - 20, 80, { align: 'right' });
+    if (poNumber) pdf.text(`PO Number: ${poNumber}`, pageWidth - 20, 90, { align: 'right' });
+    
+    // Bill To
+    pdf.text("Bill To:", 20, 110);
+    if (billToCompany) pdf.text(billToCompany, 20, 120);
+    yPos = 130;
+    if (billToAddress) { pdf.text(billToAddress, 20, yPos); yPos += 5; }
+    if (billToCityState) { pdf.text(billToCityState, 20, yPos); yPos += 5; }
+    if (billToZip) { pdf.text(billToZip, 20, yPos); }
+    
+    // Ship To (if different)
+    if (shipToCompany || shipToAddress) {
+      pdf.text("Ship To:", 120, 110);
+      if (shipToCompany) pdf.text(shipToCompany, 120, 120);
+      yPos = 130;
+      if (shipToAddress) { pdf.text(shipToAddress, 120, yPos); yPos += 5; }
+      if (shipToCityState) { pdf.text(shipToCityState, 120, yPos); yPos += 5; }
+      if (shipToZip) { pdf.text(shipToZip, 120, yPos); }
     }
     
-    // Invoice Details
-    pdf.setFontSize(10);
-    pdf.text(`Invoice #: ${invoiceNumber}`, 20, 100);
-    pdf.text(`Date: ${issueDate}`, 20, 110);
-    pdf.text(`Due: ${dueDate}`, 20, 120);
-    
-    // Client Info
-    pdf.text("Bill To:", 120, 60);
-    pdf.setFont(undefined, 'bold');
-    pdf.text(clientName || "Client Name", 120, 70);
-    pdf.setFont(undefined, 'normal');
-    if (clientAddress) {
-      const lines = clientAddress.split('\n');
-      lines.forEach((line, index) => {
-        pdf.text(line, 120, 80 + (index * 5));
-      });
-    }
-    
-    // Items Table Header
-    const startY = 140;
-    pdf.setFillColor(240, 240, 240);
+    // Items table
+    const startY = 170;
+    pdf.setFillColor(52, 73, 94);
     pdf.rect(15, startY, pageWidth - 30, 10, 'F');
+    pdf.setTextColor(255, 255, 255);
     pdf.setFont(undefined, 'bold');
-    pdf.text("Description", 20, startY + 7);
-    pdf.text("Qty", 120, startY + 7);
+    pdf.text("Item", 20, startY + 7);
+    pdf.text("Quantity", 120, startY + 7);
     pdf.text("Rate", 140, startY + 7);
-    pdf.text("Total", 170, startY + 7);
+    pdf.text("Amount", 170, startY + 7);
     
     // Items
+    pdf.setTextColor(40, 40, 40);
     pdf.setFont(undefined, 'normal');
     let currentY = startY + 15;
     
-    items.forEach((item, index) => {
+    items.forEach((item) => {
       if (item.description) {
         pdf.text(item.description, 20, currentY);
         pdf.text(item.quantity.toString(), 120, currentY);
@@ -118,17 +178,40 @@ const InvoiceGenerator = () => {
       }
     });
     
-    // Total
-    const total = calculateTotal();
+    // Totals
+    currentY += 10;
+    const subtotal = calculateSubtotal();
+    pdf.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, currentY);
+    currentY += 10;
+    
+    if (tax > 0) {
+      pdf.text(`Tax (${tax}%): $${((subtotal * tax) / 100).toFixed(2)}`, 140, currentY);
+      currentY += 10;
+    }
+    
+    if (discount > 0) {
+      pdf.text(`Discount: -$${discount.toFixed(2)}`, 140, currentY);
+      currentY += 10;
+    }
+    
+    if (shipping > 0) {
+      pdf.text(`Shipping: $${shipping.toFixed(2)}`, 140, currentY);
+      currentY += 10;
+    }
+    
     pdf.setFont(undefined, 'bold');
-    pdf.text(`Total: $${total.toFixed(2)}`, 170, currentY + 10);
+    pdf.text(`Total: $${calculateTotal().toFixed(2)}`, 140, currentY);
+    
+    // Notes
+    if (notes) {
+      currentY += 20;
+      pdf.setFont(undefined, 'normal');
+      pdf.text("Notes:", 20, currentY);
+      const noteLines = pdf.splitTextToSize(notes, 170);
+      pdf.text(noteLines, 20, currentY + 10);
+    }
     
     return pdf;
-  };
-
-  const handlePreview = () => {
-    const pdf = generatePDF();
-    window.open(pdf.output('bloburl'), '_blank');
   };
 
   const handleDownload = () => {
@@ -140,141 +223,204 @@ const InvoiceGenerator = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full mb-4">
-            <Receipt className="h-4 w-4" />
-            <span className="text-sm font-medium">Invoice Generator</span>
-          </div>
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Professional Invoice Generator
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Free Invoice Template
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Create professional invoices with custom branding and automatic calculations. 
-            Perfect for freelancers and small businesses.
+          <p className="text-muted-foreground">
+            Make beautiful invoices with one click!
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-large border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-accent" />
-                Invoice Details
-              </CardTitle>
-              <CardDescription>
-                Fill in your business and client information to generate a professional invoice
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              {/* Business & Client Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Your Business</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="company">Company Name</Label>
-                      <Input
-                        id="company"
-                        placeholder="Your Company Name"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                      />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Panel - Form */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Logo Upload */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
+                  {logo ? (
+                    <div className="space-y-4">
+                      <img src={logo} alt="Company Logo" className="h-16 mx-auto" />
+                      <Button variant="outline" onClick={() => setLogo(null)}>
+                        Remove Logo
+                      </Button>
                     </div>
-                    <div>
-                      <Label htmlFor="business-address">Business Address</Label>
-                      <Textarea
-                        id="business-address"
-                        placeholder="123 Business St, City, State 12345"
-                        rows={3}
-                        value={companyAddress}
-                        onChange={(e) => setCompanyAddress(e.target.value)}
-                      />
+                  ) : (
+                    <div className="space-y-4">
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                      <div>
+                        <Label htmlFor="logo-upload" className="cursor-pointer">
+                          <span className="text-primary hover:underline">+ Add Your Logo</span>
+                          <Input
+                            id="logo-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLogoUpload}
+                          />
+                        </Label>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Bill To</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="client">Client Name</Label>
-                      <Input
-                        id="client"
-                        placeholder="Client Company Name"
-                        value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="client-address">Client Address</Label>
-                      <Textarea
-                        id="client-address"
-                        placeholder="123 Client St, City, State 12345"
-                        rows={3}
-                        value={clientAddress}
-                        onChange={(e) => setClientAddress(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Company and Client Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* From */}
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="font-semibold text-foreground">Who is this from?</h3>
+                  <Input
+                    placeholder="Company Name"
+                    value={fromCompany}
+                    onChange={(e) => setFromCompany(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Street Address"
+                    value={fromAddress}
+                    onChange={(e) => setFromAddress(e.target.value)}
+                  />
+                  <Input
+                    placeholder="City, State"
+                    value={fromCityState}
+                    onChange={(e) => setFromCityState(e.target.value)}
+                  />
+                  <Input
+                    placeholder="ZIP Code"
+                    value={fromZip}
+                    onChange={(e) => setFromZip(e.target.value)}
+                  />
+                </CardContent>
+              </Card>
 
               {/* Invoice Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="invoice-number">Invoice Number</Label>
-                  <Input
-                    id="invoice-number"
-                    placeholder="INV-001"
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="issue-date">Issue Date</Label>
-                  <Input
-                    id="issue-date"
-                    type="date"
-                    value={issueDate}
-                    onChange={(e) => setIssueDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="due-date">Due Date</Label>
-                  <Input
-                    id="due-date"
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
-              </div>
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Payment Terms</Label>
+                      <Input
+                        placeholder="Net 30"
+                        value={paymentTerms}
+                        onChange={(e) => setPaymentTerms(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Due Date</Label>
+                      <Input
+                        type="date"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>PO Number</Label>
+                      <Input
+                        placeholder="Optional"
+                        value={poNumber}
+                        onChange={(e) => setPoNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Line Items */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">Line Items</h3>
-                  <Button onClick={addItem} variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                  </Button>
-                </div>
+            {/* Bill To and Ship To */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Bill To */}
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="font-semibold text-foreground">Bill To</h3>
+                  <Input
+                    placeholder="Who is this to?"
+                    value={billToCompany}
+                    onChange={(e) => setBillToCompany(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Street Address"
+                    value={billToAddress}
+                    onChange={(e) => setBillToAddress(e.target.value)}
+                  />
+                  <Input
+                    placeholder="City, State"
+                    value={billToCityState}
+                    onChange={(e) => setBillToCityState(e.target.value)}
+                  />
+                  <Input
+                    placeholder="ZIP Code"
+                    value={billToZip}
+                    onChange={(e) => setBillToZip(e.target.value)}
+                  />
+                </CardContent>
+              </Card>
 
-                <div className="space-y-3">
-                  {items.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-12 gap-3 items-end">
+              {/* Ship To */}
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="font-semibold text-foreground">Ship To</h3>
+                  <Input
+                    placeholder="(optional)"
+                    value={shipToCompany}
+                    onChange={(e) => setShipToCompany(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Street Address"
+                    value={shipToAddress}
+                    onChange={(e) => setShipToAddress(e.target.value)}
+                  />
+                  <Input
+                    placeholder="City, State"
+                    value={shipToCityState}
+                    onChange={(e) => setShipToCityState(e.target.value)}
+                  />
+                  <Input
+                    placeholder="ZIP Code"
+                    value={shipToZip}
+                    onChange={(e) => setShipToZip(e.target.value)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Items Table */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="bg-slate-700 text-white p-3 rounded-t-lg">
+                  <div className="grid grid-cols-12 gap-4 font-medium">
+                    <div className="col-span-6">Item</div>
+                    <div className="col-span-2">Quantity</div>
+                    <div className="col-span-2">Rate</div>
+                    <div className="col-span-2">Amount</div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 border border-t-0 rounded-b-lg p-3">
+                  {items.map((item) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center">
                       <div className="col-span-6">
-                        {index === 0 && <Label className="text-sm">Description</Label>}
                         <Input
-                          placeholder="Service or product description"
+                          placeholder="Description of item/service..."
                           value={item.description}
                           onChange={(e) => updateItem(item.id, "description", e.target.value)}
                         />
                       </div>
                       <div className="col-span-2">
-                        {index === 0 && <Label className="text-sm">Qty</Label>}
                         <Input
                           type="number"
                           min="1"
@@ -283,24 +429,22 @@ const InvoiceGenerator = () => {
                         />
                       </div>
                       <div className="col-span-2">
-                        {index === 0 && <Label className="text-sm">Rate</Label>}
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={item.rate}
-                          onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        {index === 0 && <Label className="text-sm">Total</Label>}
-                        <div className="h-10 flex items-center text-sm font-medium">
-                          ${(item.quantity * item.rate).toFixed(2)}
+                        <div className="flex">
+                          <span className="bg-muted px-2 py-2 rounded-l border">$</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.rate}
+                            onChange={(e) => updateItem(item.id, "rate", parseFloat(e.target.value) || 0)}
+                            className="rounded-l-none border-l-0"
+                          />
                         </div>
                       </div>
+                      <div className="col-span-1 text-right font-medium">
+                        ${(item.quantity * item.rate).toFixed(2)}
+                      </div>
                       <div className="col-span-1">
-                        {index === 0 && <div className="h-5"></div>}
                         <Button
                           onClick={() => removeItem(item.id)}
                           variant="ghost"
@@ -313,69 +457,250 @@ const InvoiceGenerator = () => {
                     </div>
                   ))}
                 </div>
+                
+                <div className="mt-4">
+                  <Button onClick={addItem} variant="outline" size="sm" className="text-teal-600 border-teal-600 hover:bg-teal-50">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Line Item
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Total */}
-                <div className="flex justify-end">
-                  <div className="bg-muted/50 p-4 rounded-lg">
+            {/* Notes */}
+            <Card>
+              <CardContent className="p-6">
+                <Label htmlFor="notes" className="text-base font-medium">Notes</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Notes - any relevant information not already covered"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="mt-2"
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Panel - Settings and Preview */}
+          <div className="space-y-6">
+            {/* Download Button */}
+            <Button onClick={handleDownload} className="w-full bg-teal-600 hover:bg-teal-700">
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+
+            {/* Settings */}
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Theme</Label>
+                  <Select value={theme} onValueChange={setTheme}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="classic">Classic</SelectItem>
+                      <SelectItem value="slate">Slate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD ($)">USD ($)</SelectItem>
+                      <SelectItem value="EUR (€)">EUR (€)</SelectItem>
+                      <SelectItem value="GBP (£)">GBP (£)</SelectItem>
+                      <SelectItem value="CAD ($)">CAD ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Invoice Preview */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="bg-white text-black p-6 rounded-lg shadow-inner min-h-[400px] text-xs">
+                  {/* Invoice Header */}
+                  <div className="flex justify-between items-start mb-8">
+                    <div>
+                      {logo && <img src={logo} alt="Logo" className="h-12 mb-4" />}
+                    </div>
                     <div className="text-right">
-                      <div className="text-sm text-muted-foreground mb-1">Total Amount</div>
-                      <div className="text-2xl font-bold text-foreground">
-                        ${calculateTotal().toFixed(2)}
+                      <h1 className="text-2xl font-bold mb-2">INVOICE</h1>
+                      <div># {invoiceNumber}</div>
+                    </div>
+                  </div>
+
+                  {/* Company and Date Info */}
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                      {fromCompany && <div className="font-bold">{fromCompany}</div>}
+                      {fromAddress && <div>{fromAddress}</div>}
+                      {fromCityState && <div>{fromCityState}</div>}
+                      {fromZip && <div>{fromZip}</div>}
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div>Date: {date}</div>
+                      {paymentTerms && <div>Payment Terms: {paymentTerms}</div>}
+                      {dueDate && <div>Due Date: {dueDate}</div>}
+                      {poNumber && <div>PO Number: {poNumber}</div>}
+                    </div>
+                  </div>
+
+                  {/* Bill To / Ship To */}
+                  <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                      <div className="font-bold mb-2">Bill To</div>
+                      {billToCompany && <div>{billToCompany}</div>}
+                      {billToAddress && <div>{billToAddress}</div>}
+                      {billToCityState && <div>{billToCityState}</div>}
+                      {billToZip && <div>{billToZip}</div>}
+                    </div>
+                    {(shipToCompany || shipToAddress) && (
+                      <div>
+                        <div className="font-bold mb-2">Ship To</div>
+                        {shipToCompany && <div>{shipToCompany}</div>}
+                        {shipToAddress && <div>{shipToAddress}</div>}
+                        {shipToCityState && <div>{shipToCityState}</div>}
+                        {shipToZip && <div>{shipToZip}</div>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Items Table */}
+                  <div className="mb-8">
+                    <div className="bg-slate-700 text-white p-2 grid grid-cols-4 gap-2 text-xs font-medium">
+                      <div>Item</div>
+                      <div>Quantity</div>
+                      <div>Rate</div>
+                      <div>Amount</div>
+                    </div>
+                    {items.filter(item => item.description).map((item) => (
+                      <div key={item.id} className="border-b p-2 grid grid-cols-4 gap-2">
+                        <div>{item.description}</div>
+                        <div>{item.quantity}</div>
+                        <div>${item.rate.toFixed(2)}</div>
+                        <div>${(item.quantity * item.rate).toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="flex justify-end">
+                    <div className="w-48 space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>${calculateSubtotal().toFixed(2)}</span>
+                      </div>
+                      {tax > 0 && (
+                        <div className="flex justify-between">
+                          <span>Tax ({tax}%)</span>
+                          <span>${((calculateSubtotal() * tax) / 100).toFixed(2)}</span>
+                        </div>
+                      )}
+                      {discount > 0 && (
+                        <div className="flex justify-between text-red-600">
+                          <span>Discount</span>
+                          <span>-${discount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {shipping > 0 && (
+                        <div className="flex justify-between">
+                          <span>Shipping</span>
+                          <span>${shipping.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold border-t pt-2">
+                        <span>Total</span>
+                        <span>${calculateTotal().toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
-                <Button onClick={handlePreview} variant="outline" className="flex-1">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview Invoice
-                </Button>
-                <Button onClick={handleDownload} className="flex-1" variant="success">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Features */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Receipt className="h-6 w-6 text-accent" />
+                  {/* Notes */}
+                  {notes && (
+                    <div className="mt-8 pt-4 border-t">
+                      <div className="font-bold mb-2">Notes</div>
+                      <div>{notes}</div>
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Professional Design</h3>
-                <p className="text-muted-foreground text-sm">
-                  Clean, professional invoice templates that make a great impression
-                </p>
               </CardContent>
             </Card>
-            
+
+            {/* Additional Options */}
             <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Plus className="h-6 w-6 text-primary" />
+              <CardContent className="p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Tax (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={tax}
+                      onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground pt-5">
+                    ${tax > 0 ? ((calculateSubtotal() * tax) / 100).toFixed(2) : '0.00'}
+                  </div>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Auto Calculations</h3>
-                <p className="text-muted-foreground text-sm">
-                  Automatic totals, tax calculations, and currency formatting
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Download className="h-6 w-6 text-secondary" />
+                
+                <div className="flex items-center justify-between">
+                  <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 text-xs">
+                    + Discount
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-teal-600 border-teal-600 text-xs">
+                    + Shipping
+                  </Button>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">PDF Export</h3>
-                <p className="text-muted-foreground text-sm">
-                  Download professional PDF invoices ready to send to clients
-                </p>
+
+                {/* Discount Input (shown when clicked) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Discount ($)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={discount}
+                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="text-right text-xs text-red-600 pt-5">
+                    ${discount > 0 ? discount.toFixed(2) : '0.00'}
+                  </div>
+                </div>
+
+                {/* Shipping Input (shown when clicked) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Shipping ($)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={shipping}
+                      onChange={(e) => setShipping(parseFloat(e.target.value) || 0)}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground pt-5">
+                    ${shipping > 0 ? shipping.toFixed(2) : '0.00'}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
