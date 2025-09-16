@@ -5,26 +5,73 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Link, Copy, BarChart3, AlertCircle } from "lucide-react";
+import { Link, Copy, BarChart3, AlertCircle, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const URLShortener = () => {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
   const [isShortening, setIsShortening] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const { toast } = useToast();
+
+  const isValidUrl = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
 
   const handleShorten = () => {
-    if (!url.trim()) return;
+    if (!url.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a URL to shorten",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid URL (including http:// or https://)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsShortening(true);
     // Simulate URL shortening
     setTimeout(() => {
       setIsShortening(false);
-      setShortUrl(`https://short.ly/${Math.random().toString(36).substr(2, 8)}`);
+      const shortCode = Math.random().toString(36).substr(2, 8);
+      setShortUrl(`https://short.ly/${shortCode}`);
+      toast({
+        title: "Success!",
+        description: "URL shortened successfully",
+      });
     }, 1000);
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shortUrl);
-    alert("Short URL copied to clipboard!");
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      setIsCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Short URL copied to clipboard",
+      });
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -34,7 +81,7 @@ const URLShortener = () => {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-warning/10 text-warning px-4 py-2 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
             <Link className="h-4 w-4" />
             <span className="text-sm font-medium">URL Shortener</span>
           </div>
@@ -52,7 +99,7 @@ const URLShortener = () => {
           <Card className="shadow-large border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Link className="h-5 w-5 text-warning" />
+                <Link className="h-5 w-5 text-primary" />
                 Shorten URL
               </CardTitle>
               <CardDescription>
@@ -76,7 +123,6 @@ const URLShortener = () => {
                 disabled={!url.trim() || isShortening}
                 className="w-full"
                 size="lg"
-                variant="warning"
               >
                 {isShortening ? "Shortening..." : "Shorten URL"}
               </Button>
@@ -89,20 +135,24 @@ const URLShortener = () => {
                       <p className="font-mono text-foreground">{shortUrl}</p>
                     </div>
                     <Button onClick={copyToClipboard} variant="outline" size="sm">
-                      <Copy className="h-4 w-4" />
+                      {isCopied ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <div className="grid grid-cols-3 gap-4 pt-3 border-t">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-warning">0</div>
+                      <div className="text-2xl font-bold text-primary">0</div>
                       <div className="text-xs text-muted-foreground">Clicks</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">0</div>
+                      <div className="text-2xl font-bold text-green-600">0</div>
                       <div className="text-xs text-muted-foreground">Today</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-secondary">0</div>
+                      <div className="text-2xl font-bold text-blue-600">0</div>
                       <div className="text-xs text-muted-foreground">Countries</div>
                     </div>
                   </div>
@@ -115,7 +165,7 @@ const URLShortener = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">
                     Demo Mode Notice
@@ -134,8 +184,8 @@ const URLShortener = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Link className="h-6 w-6 text-warning" />
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Link className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">Custom Links</h3>
                 <p className="text-muted-foreground text-sm">
