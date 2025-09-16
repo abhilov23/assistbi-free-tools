@@ -10,7 +10,7 @@ import QRGenerator from "./pages/tools/QRGenerator";
 import InvoiceGenerator from "./pages/tools/InvoiceGenerator";
 import PDFExporter from "./pages/tools/PDFExporter";
 import URLShortener from "./pages/tools/URLShortener";
-import DocumentSummarizer from "./pages/tools/DocumentSummarizer";
+import BusinessCardCreator from "./pages/tools/BusinessCardCreator";
 import GrammarChecker from "./pages/tools/GrammarChecker";
 import ResumeBuilder from "./pages/tools/ResumeBuilder";
 
@@ -29,7 +29,7 @@ const App = () => (
           <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
           <Route path="/tools/pdf-exporter" element={<PDFExporter />} />
           <Route path="/tools/url-shortener" element={<URLShortener />} />
-          <Route path="/tools/document-summarizer" element={<DocumentSummarizer />} />
+          <Route path="/tools/business-card-creator" element={<BusinessCardCreator />} />
           <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
           <Route path="/tools/resume-builder" element={<ResumeBuilder />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

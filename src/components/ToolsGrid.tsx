@@ -5,7 +5,7 @@ import {
   Receipt, 
   QrCode, 
   Link, 
-  FileCheck, 
+  CreditCard, 
   CheckCircle, 
   User 
 } from "lucide-react";
@@ -47,10 +47,10 @@ const toolsData = [
     color: "warning",
   },
   {
-    title: "Document Summarizer",
-    description: "Get concise summaries of long documents using AI technology.",
-    icon: FileCheck,
-    href: "/tools/document-summarizer",
+    title: "Business Card Creator",
+    description: "Design professional business cards with customizable templates.",
+    icon: CreditCard,
+    href: "/tools/business-card-creator",
     color: "primary",
   },
   {
