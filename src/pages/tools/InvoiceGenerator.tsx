@@ -215,8 +215,15 @@ const InvoiceGenerator = () => {
   };
 
   const handleDownload = () => {
-    const pdf = generatePDF();
-    pdf.save(`invoice-${invoiceNumber}.pdf`);
+    try {
+      console.log("Starting PDF generation...");
+      const pdf = generatePDF();
+      console.log("PDF generated successfully, attempting to save...");
+      pdf.save(`invoice-${invoiceNumber}.pdf`);
+      console.log("PDF save completed");
+    } catch (error) {
+      console.error("Error generating or downloading PDF:", error);
+    }
   };
 
   return (
