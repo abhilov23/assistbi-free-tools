@@ -24,7 +24,7 @@ const URLShortener = () => {
     }
   };
 
-  const handleShorten = () => {
+  const handleShorten = async () => {
     if (!url.trim()) {
       toast({
         title: "Error",
@@ -44,16 +44,30 @@ const URLShortener = () => {
     }
 
     setIsShortening(true);
-    // Simulate URL shortening
-    setTimeout(() => {
-      setIsShortening(false);
-      const shortCode = Math.random().toString(36).substr(2, 8);
-      setShortUrl(`https://short.ly/${shortCode}`);
+    
+    try {
+      const response = await fetch(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (data.ok) {
+        setShortUrl(data.result.full_short_link);
+        toast({
+          title: "Success!",
+          description: "URL shortened successfully",
+        });
+      } else {
+        throw new Error(data.error || "Failed to shorten URL");
+      }
+    } catch (error) {
+      console.error('Error shortening URL:', error);
       toast({
-        title: "Success!",
-        description: "URL shortened successfully",
+        title: "Error",
+        description: "Failed to shorten URL. Please try again.",
+        variant: "destructive",
       });
-    }, 1000);
+    } finally {
+      setIsShortening(false);
+    }
   };
 
   const copyToClipboard = async () => {
