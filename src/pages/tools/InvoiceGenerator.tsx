@@ -518,6 +518,7 @@ const InvoiceGenerator = () => {
                       <SelectItem value="EUR (€)">EUR (€)</SelectItem>
                       <SelectItem value="GBP (£)">GBP (£)</SelectItem>
                       <SelectItem value="CAD ($)">CAD ($)</SelectItem>
+                      <SelectItem value="INR (₹)">INR (₹)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
