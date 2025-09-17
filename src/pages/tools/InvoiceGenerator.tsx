@@ -103,112 +103,295 @@ const InvoiceGenerator = () => {
   const generatePDF = () => {
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const currencySymbol = currency.charAt(currency.length - 2) === '(' ? currency.slice(-2, -1) : '$';
     
-    // Header with logo space
+    // Colors
+    const primaryColor = [54, 73, 93] as const; // Dark blue-gray
+    const secondaryColor = [240, 242, 245] as const; // Light gray
+    const textColor = [44, 62, 80] as const; // Dark gray
+    
+    let yPosition = 30;
+    
+    // Header Section
+    pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    pdf.rect(0, 0, pageWidth, 60, 'F');
+    
+    // Logo space (left side)
     if (logo) {
-      // Add logo handling here if needed
+      try {
+        pdf.addImage(logo, 'JPEG', margin, 15, 40, 30);
+      } catch (error) {
+        console.log('Logo could not be added to PDF');
+      }
     }
     
-    pdf.setFontSize(32);
-    pdf.setTextColor(40, 40, 40);
-    pdf.text("INVOICE", pageWidth - 20, 30, { align: 'right' });
+    // Invoice Title (right side)
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(28);
+    pdf.setFont(undefined, 'bold');
+    pdf.text("TAX INVOICE", pageWidth - margin, 35, { align: 'right' });
     
-    // Invoice details
+    yPosition = 80;
+    
+    // Invoice Number and Details Box
+    pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    pdf.rect(pageWidth - 80, yPosition - 10, 60, 40, 'F');
+    pdf.setDrawColor(200, 200, 200);
+    pdf.rect(pageWidth - 80, yPosition - 10, 60, 40, 'S');
+    
+    pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
     pdf.setFontSize(10);
-    pdf.text(`# ${invoiceNumber}`, pageWidth - 20, 45, { align: 'right' });
+    pdf.setFont(undefined, 'bold');
+    pdf.text("Invoice#", pageWidth - 75, yPosition);
+    pdf.setFont(undefined, 'normal');
+    pdf.text(invoiceNumber, pageWidth - 75, yPosition + 8);
     
-    // Company Info
+    pdf.setFont(undefined, 'bold');
+    pdf.text("Invoice Date", pageWidth - 75, yPosition + 18);
+    pdf.setFont(undefined, 'normal');
+    pdf.text(date, pageWidth - 75, yPosition + 26);
+    
+    if (dueDate) {
+      pdf.setFont(undefined, 'bold');
+      pdf.text("Due Date", pageWidth - 75, yPosition + 36);
+      pdf.setFont(undefined, 'normal');
+      // Adjust text size if due date is long
+      pdf.text(dueDate.length > 10 ? dueDate.substring(0, 10) : dueDate, pageWidth - 75, yPosition + 44);
+    }
+    
+    // Company Information (From)
     pdf.setFontSize(12);
     pdf.setFont(undefined, 'bold');
-    if (fromCompany) pdf.text(fromCompany, 20, 60);
-    pdf.setFont(undefined, 'normal');
-    pdf.setFontSize(10);
-    let yPos = 70;
-    if (fromAddress) { pdf.text(fromAddress, 20, yPos); yPos += 5; }
-    if (fromCityState) { pdf.text(fromCityState, 20, yPos); yPos += 5; }
-    if (fromZip) { pdf.text(fromZip, 20, yPos); }
+    pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+    if (fromCompany) {
+      pdf.text(fromCompany, margin, yPosition);
+      yPosition += 8;
+    }
     
-    // Dates
-    pdf.text(`Date: ${date}`, pageWidth - 20, 60, { align: 'right' });
-    if (dueDate) pdf.text(`Due Date: ${dueDate}`, pageWidth - 20, 70, { align: 'right' });
-    if (paymentTerms) pdf.text(`Payment Terms: ${paymentTerms}`, pageWidth - 20, 80, { align: 'right' });
-    if (poNumber) pdf.text(`PO Number: ${poNumber}`, pageWidth - 20, 90, { align: 'right' });
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'normal');
+    if (fromAddress) {
+      pdf.text(fromAddress, margin, yPosition);
+      yPosition += 6;
+    }
+    if (fromCityState) {
+      pdf.text(fromCityState, margin, yPosition);
+      yPosition += 6;
+    }
+    if (fromZip) {
+      pdf.text(fromZip, margin, yPosition);
+    }
+    
+    yPosition = 140;
+    
+    // Bill To and Ship To Section
+    const billToX = margin;
+    const shipToX = pageWidth / 2 + 10;
     
     // Bill To
-    pdf.text("Bill To:", 20, 110);
-    if (billToCompany) pdf.text(billToCompany, 20, 120);
-    yPos = 130;
-    if (billToAddress) { pdf.text(billToAddress, 20, yPos); yPos += 5; }
-    if (billToCityState) { pdf.text(billToCityState, 20, yPos); yPos += 5; }
-    if (billToZip) { pdf.text(billToZip, 20, yPos); }
+    pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    pdf.rect(billToX, yPosition, (pageWidth / 2) - 10, 8, 'F');
+    pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'bold');
+    pdf.text("BILL TO:", billToX + 5, yPosition + 6);
+    
+    yPosition += 15;
+    pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'normal');
+    
+    if (billToCompany) {
+      pdf.setFont(undefined, 'bold');
+      pdf.text(billToCompany, billToX, yPosition);
+      pdf.setFont(undefined, 'normal');
+      yPosition += 6;
+    }
+    if (billToAddress) {
+      pdf.text(billToAddress, billToX, yPosition);
+      yPosition += 6;
+    }
+    if (billToCityState) {
+      pdf.text(billToCityState, billToX, yPosition);
+      yPosition += 6;
+    }
+    if (billToZip) {
+      pdf.text(billToZip, billToX, yPosition);
+    }
     
     // Ship To (if different)
     if (shipToCompany || shipToAddress) {
-      pdf.text("Ship To:", 120, 110);
-      if (shipToCompany) pdf.text(shipToCompany, 120, 120);
-      yPos = 130;
-      if (shipToAddress) { pdf.text(shipToAddress, 120, yPos); yPos += 5; }
-      if (shipToCityState) { pdf.text(shipToCityState, 120, yPos); yPos += 5; }
-      if (shipToZip) { pdf.text(shipToZip, 120, yPos); }
+      let shipYPosition = 148;
+      pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      pdf.rect(shipToX, 140, (pageWidth / 2) - 30, 8, 'F');
+      pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text("SHIP TO:", shipToX + 5, 146);
+      
+      shipYPosition += 7;
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'normal');
+      
+      if (shipToCompany) {
+        pdf.setFont(undefined, 'bold');
+        pdf.text(shipToCompany, shipToX, shipYPosition);
+        pdf.setFont(undefined, 'normal');
+        shipYPosition += 6;
+      }
+      if (shipToAddress) {
+        pdf.text(shipToAddress, shipToX, shipYPosition);
+        shipYPosition += 6;
+      }
+      if (shipToCityState) {
+        pdf.text(shipToCityState, shipToX, shipYPosition);
+        shipYPosition += 6;
+      }
+      if (shipToZip) {
+        pdf.text(shipToZip, shipToX, shipYPosition);
+      }
     }
     
-    // Items table
-    const startY = 170;
-    pdf.setFillColor(52, 73, 94);
-    pdf.rect(15, startY, pageWidth - 30, 10, 'F');
+    yPosition = 200;
+    
+    // Items Table
+    const tableStartY = yPosition;
+    const colWidths = [80, 25, 30, 35]; // Description, Qty, Rate, Amount
+    const colPositions = [margin, margin + colWidths[0], margin + colWidths[0] + colWidths[1], margin + colWidths[0] + colWidths[1] + colWidths[2]];
+    
+    // Table Header
+    pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    pdf.rect(margin, tableStartY, pageWidth - (margin * 2), 12, 'F');
+    
     pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
-    pdf.text("Item", 20, startY + 7);
-    pdf.text("Quantity", 120, startY + 7);
-    pdf.text("Rate", 140, startY + 7);
-    pdf.text("Amount", 170, startY + 7);
+    pdf.text("DESCRIPTION", colPositions[0] + 3, tableStartY + 8);
+    pdf.text("QTY", colPositions[1] + 3, tableStartY + 8);
+    pdf.text("RATE", colPositions[2] + 3, tableStartY + 8);
+    pdf.text("AMOUNT", colPositions[3] + 3, tableStartY + 8);
     
-    // Items
-    pdf.setTextColor(40, 40, 40);
+    yPosition = tableStartY + 12;
+    
+    // Table Rows
+    pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
     pdf.setFont(undefined, 'normal');
-    let currentY = startY + 15;
+    pdf.setFontSize(9);
     
-    items.forEach((item) => {
-      if (item.description) {
-        pdf.text(item.description, 20, currentY);
-        pdf.text(item.quantity.toString(), 120, currentY);
-        pdf.text(`$${item.rate.toFixed(2)}`, 140, currentY);
-        pdf.text(`$${(item.quantity * item.rate).toFixed(2)}`, 170, currentY);
-        currentY += 10;
+    const validItems = items.filter(item => item.description.trim());
+    
+    validItems.forEach((item, index) => {
+      const rowHeight = 12;
+      const isEvenRow = index % 2 === 0;
+      
+      // Alternate row background
+      if (isEvenRow) {
+        pdf.setFillColor(250, 250, 250);
+        pdf.rect(margin, yPosition, pageWidth - (margin * 2), rowHeight, 'F');
       }
+      
+      // Row borders
+      pdf.setDrawColor(220, 220, 220);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      
+      // Cell content
+      const descLines = pdf.splitTextToSize(item.description, colWidths[0] - 6);
+      pdf.text(descLines[0], colPositions[0] + 3, yPosition + 8);
+      pdf.text(item.quantity.toString(), colPositions[1] + 3, yPosition + 8);
+      pdf.text(`${currencySymbol}${item.rate.toFixed(2)}`, colPositions[2] + 3, yPosition + 8);
+      pdf.text(`${currencySymbol}${(item.quantity * item.rate).toFixed(2)}`, colPositions[3] + 3, yPosition + 8);
+      
+      yPosition += rowHeight;
     });
     
-    // Totals
-    currentY += 10;
+    // Bottom border of table
+    pdf.setDrawColor(220, 220, 220);
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+    
+    yPosition += 20;
+    
+    // Totals Section
+    const totalsX = pageWidth - 80;
     const subtotal = calculateSubtotal();
-    pdf.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, currentY);
-    currentY += 10;
+    const taxAmount = (subtotal * tax) / 100;
+    const total = calculateTotal();
     
+    pdf.setFontSize(10);
+    
+    // Subtotal
+    pdf.setFont(undefined, 'normal');
+    pdf.text("Subtotal:", totalsX - 30, yPosition);
+    pdf.text(`${currencySymbol}${subtotal.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+    yPosition += 8;
+    
+    // Tax
     if (tax > 0) {
-      pdf.text(`Tax (${tax}%): $${((subtotal * tax) / 100).toFixed(2)}`, 140, currentY);
-      currentY += 10;
+      pdf.text(`Tax (${tax}%):`, totalsX - 30, yPosition);
+      pdf.text(`${currencySymbol}${taxAmount.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      yPosition += 8;
     }
     
+    // Discount
     if (discount > 0) {
-      pdf.text(`Discount: -$${discount.toFixed(2)}`, 140, currentY);
-      currentY += 10;
+      pdf.setTextColor(220, 53, 69); // Red color for discount
+      pdf.text("Discount:", totalsX - 30, yPosition);
+      pdf.text(`-${currencySymbol}${discount.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      yPosition += 8;
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]); // Reset color
     }
     
+    // Shipping
     if (shipping > 0) {
-      pdf.text(`Shipping: $${shipping.toFixed(2)}`, 140, currentY);
-      currentY += 10;
+      pdf.text("Shipping:", totalsX - 30, yPosition);
+      pdf.text(`${currencySymbol}${shipping.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      yPosition += 8;
     }
+    
+    // Total
+    pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    pdf.line(totalsX - 35, yPosition, totalsX + 5, yPosition);
+    yPosition += 5;
     
     pdf.setFont(undefined, 'bold');
-    pdf.text(`Total: $${calculateTotal().toFixed(2)}`, 140, currentY);
+    pdf.setFontSize(12);
+    pdf.text("TOTAL:", totalsX - 30, yPosition);
+    pdf.text(`${currencySymbol}${total.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
     
-    // Notes
+    // Notes Section
     if (notes) {
-      currentY += 20;
+      yPosition += 25;
+      if (yPosition > pageHeight - 50) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text("NOTES:", margin, yPosition);
+      yPosition += 8;
+      
       pdf.setFont(undefined, 'normal');
-      pdf.text("Notes:", 20, currentY);
-      const noteLines = pdf.splitTextToSize(notes, 170);
-      pdf.text(noteLines, 20, currentY + 10);
+      pdf.setFontSize(9);
+      const noteLines = pdf.splitTextToSize(notes, pageWidth - (margin * 2));
+      pdf.text(noteLines, margin, yPosition);
+    }
+    
+    // Payment Terms
+    if (paymentTerms) {
+      yPosition += (notes ? 20 : 30);
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+      
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'bold');
+      pdf.text("Payment Terms: ", margin, yPosition);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(paymentTerms, margin + 30, yPosition);
     }
     
     return pdf;
