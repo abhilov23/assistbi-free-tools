@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { CheckCircle, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Issue {
   type: "grammar" | "spelling" | "style";
@@ -17,6 +18,92 @@ const GrammarChecker = () => {
   const [text, setText] = useState("");
   const [issues, setIssues] = useState<Issue[]>([]);
   const [isChecking, setIsChecking] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speechSynthesis, setSpeechSynthesis] = useState<SpeechSynthesis | null>(null);
+  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      setSpeechSynthesis(window.speechSynthesis);
+    }
+  }, []);
+
+  const handleTextToSpeech = () => {
+    if (!speechSynthesis) {
+      toast({
+        title: "Not Supported",
+        description: "Text-to-speech is not supported in your browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!text.trim()) {
+      toast({
+        title: "No Text",
+        description: "Please enter some text to read aloud.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isSpeaking && !isPaused) {
+      // Pause speech
+      speechSynthesis.pause();
+      setIsPaused(true);
+      return;
+    }
+
+    if (isPaused) {
+      // Resume speech
+      speechSynthesis.resume();
+      setIsPaused(false);
+      return;
+    }
+
+    // Start new speech
+    speechSynthesis.cancel(); // Cancel any ongoing speech
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsPaused(false);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentUtterance(null);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentUtterance(null);
+      toast({
+        title: "Speech Error",
+        description: "An error occurred during text-to-speech.",
+        variant: "destructive",
+      });
+    };
+
+    setCurrentUtterance(utterance);
+    speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeech = () => {
+    if (speechSynthesis) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentUtterance(null);
+    }
+  };
 
   const handleCheck = () => {
     if (!text.trim()) return;
@@ -106,15 +193,41 @@ const GrammarChecker = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleCheck}
-                disabled={!text.trim() || isChecking}
-                className="w-full"
-                size="lg"
-                variant="secondary"
-              >
-                {isChecking ? "Checking..." : "Check Grammar & Style"}
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleCheck}
+                  disabled={!text.trim() || isChecking}
+                  className="flex-1"
+                  size="lg"
+                  variant="secondary"
+                >
+                  {isChecking ? "Checking..." : "Check Grammar & Style"}
+                </Button>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleTextToSpeech}
+                    disabled={!text.trim()}
+                    size="lg"
+                    variant="outline"
+                    className="px-3"
+                  >
+                    {isSpeaking && !isPaused ? <Pause className="h-4 w-4" /> : 
+                     isPaused ? <Play className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </Button>
+                  
+                  {isSpeaking && (
+                    <Button
+                      onClick={stopSpeech}
+                      size="lg"
+                      variant="outline"
+                      className="px-3"
+                    >
+                      <VolumeX className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
