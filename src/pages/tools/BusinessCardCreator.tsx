@@ -58,44 +58,66 @@ const BusinessCardCreator = () => {
     { 
       id: "modern", 
       name: "Modern", 
-      color: "bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600",
+      color: "bg-gradient-to-br from-primary via-primary-glow to-accent",
       textColor: "text-white",
-      pattern: "geometric"
+      pattern: "geometric",
+      glow: "shadow-elegant"
     },
     { 
       id: "classic", 
       name: "Classic", 
-      color: "bg-gradient-to-br from-slate-800 to-slate-900",
-      textColor: "text-white",
-      pattern: "elegant"
+      color: "bg-gradient-to-br from-card via-muted to-card-foreground",
+      textColor: "text-card-foreground",
+      pattern: "elegant",
+      glow: "shadow-subtle"
     },
     { 
       id: "creative", 
       name: "Creative", 
-      color: "bg-gradient-to-br from-orange-500 via-red-500 to-pink-500",
+      color: "bg-gradient-to-br from-destructive via-primary to-accent",
       textColor: "text-white",
-      pattern: "artistic"
+      pattern: "artistic",
+      glow: "shadow-glow"
     },
     { 
       id: "minimal", 
       name: "Minimal", 
-      color: "bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300",
-      textColor: "text-gray-800",
-      pattern: "clean"
+      color: "bg-gradient-to-br from-background to-muted border-2 border-border",
+      textColor: "text-foreground",
+      pattern: "clean",
+      glow: "shadow-sm"
     },
     { 
       id: "neon", 
       name: "Neon", 
-      color: "bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600",
+      color: "bg-gradient-to-br from-accent via-primary to-primary-glow",
       textColor: "text-white",
-      pattern: "futuristic"
+      pattern: "futuristic",
+      glow: "shadow-glow animate-pulse"
     },
     { 
       id: "luxury", 
       name: "Luxury", 
-      color: "bg-gradient-to-br from-yellow-600 via-yellow-700 to-yellow-800",
+      color: "bg-gradient-to-br from-warning via-warning-foreground to-warning",
       textColor: "text-white",
-      pattern: "premium"
+      pattern: "premium",
+      glow: "shadow-elegant"
+    },
+    { 
+      id: "holographic", 
+      name: "Holographic", 
+      color: "bg-gradient-to-br from-primary/80 via-accent/90 to-primary-glow/80 backdrop-blur-sm",
+      textColor: "text-white",
+      pattern: "hologram",
+      glow: "shadow-glow animate-pulse"
+    },
+    { 
+      id: "glass", 
+      name: "Glass", 
+      color: "bg-white/10 backdrop-blur-md border border-white/20",
+      textColor: "text-foreground",
+      pattern: "glass",
+      glow: "shadow-large"
     }
   ];
 
@@ -105,15 +127,15 @@ const BusinessCardCreator = () => {
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
-            <CreditCard className="h-4 w-4" />
+        <div className="text-center mb-12 animate-fade-in">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-accent/10 text-primary px-6 py-3 rounded-full mb-6 shadow-subtle hover-scale transition-all duration-300 animate-scale-in">
+            <CreditCard className="h-5 w-5 animate-pulse" />
             <span className="text-sm font-medium">Business Card Creator</span>
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-4">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent mb-6 animate-slide-up">
             Professional Business Card Creator
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
             Design stunning business cards with professional templates. 
             Perfect for networking and making lasting impressions.
           </p>
@@ -121,7 +143,7 @@ const BusinessCardCreator = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Input Form */}
-          <Card className="shadow-large border-2">
+          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in hover-scale transition-all duration-300">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
@@ -222,33 +244,47 @@ const BusinessCardCreator = () => {
                   <Palette className="h-4 w-4" />
                   Choose Template
                 </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {templates.map((template) => (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {templates.map((template, index) => (
                     <button
                       key={template.id}
                       onClick={() => setSelectedTemplate(template.id)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`group p-3 rounded-xl border-2 transition-all duration-300 hover-scale animate-fade-in ${
                         selectedTemplate === template.id
-                          ? "border-primary ring-2 ring-primary/20"
-                          : "border-border hover:border-primary/50"
+                          ? "border-primary ring-2 ring-primary/20 shadow-glow"
+                          : "border-border hover:border-primary/50 hover:shadow-subtle"
                       }`}
+                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className={`w-full h-8 rounded ${template.color} mb-2 relative overflow-hidden`}>
-                        {/* Add pattern overlay based on template */}
+                      <div className={`w-full h-10 rounded-lg ${template.color} ${template.glow} mb-2 relative overflow-hidden group-hover:scale-105 transition-transform duration-300`}>
+                        {/* Enhanced pattern overlays */}
                         {template.pattern === 'geometric' && (
                           <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-0 right-0 w-4 h-4 bg-white transform rotate-45" />
-                            <div className="absolute bottom-0 left-0 w-3 h-3 bg-white rounded-full" />
+                            <div className="absolute top-0 right-0 w-4 h-4 bg-white transform rotate-45 animate-pulse" />
+                            <div className="absolute bottom-0 left-0 w-3 h-3 bg-white rounded-full animate-bounce" />
                           </div>
                         )}
                         {template.pattern === 'artistic' && (
                           <div className="absolute inset-0 opacity-30">
-                            <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full" />
-                            <div className="absolute bottom-1 right-1 w-1 h-1 bg-white" />
+                            <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full animate-ping" />
+                            <div className="absolute bottom-1 right-1 w-1 h-1 bg-white animate-pulse" />
+                            <div className="absolute top-1/2 left-1/2 w-1 h-4 bg-white/40 transform -translate-x-1/2 -translate-y-1/2 rotate-12" />
+                          </div>
+                        )}
+                        {template.pattern === 'hologram' && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                        )}
+                        {template.pattern === 'glass' && (
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-white/10" />
+                        )}
+                        {template.pattern === 'futuristic' && (
+                          <div className="absolute inset-0 opacity-40">
+                            <div className="absolute top-0 left-0 w-full h-0.5 bg-white animate-pulse" />
+                            <div className="absolute bottom-0 right-0 w-0.5 h-full bg-white animate-pulse" />
                           </div>
                         )}
                       </div>
-                      <span className="text-xs font-medium">{template.name}</span>
+                      <span className="text-xs font-medium group-hover:text-primary transition-colors">{template.name}</span>
                     </button>
                   ))}
                 </div>
@@ -257,7 +293,7 @@ const BusinessCardCreator = () => {
           </Card>
 
           {/* Preview */}
-          <Card className="shadow-large border-2">
+          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in hover-scale transition-all duration-300" style={{ animationDelay: '0.2s' }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-primary" />
@@ -271,14 +307,16 @@ const BusinessCardCreator = () => {
               {cardData.name && cardData.title && cardData.company ? (
                 <div className="space-y-6">
                   {/* Business Card Preview */}
-                  <div className="bg-muted/50 p-8 rounded-lg">
+                  <div className="bg-gradient-to-br from-muted/30 to-muted/60 p-8 rounded-xl backdrop-blur-sm">
                     <div 
                       ref={cardRef}
-                      className={`w-full h-48 rounded-lg p-6 ${
+                      className={`w-full h-48 rounded-xl p-6 ${
                         templates.find(t => t.id === selectedTemplate)?.color
                       } ${
                         templates.find(t => t.id === selectedTemplate)?.textColor
-                      } relative overflow-hidden shadow-xl`}
+                      } ${
+                        templates.find(t => t.id === selectedTemplate)?.glow
+                      } relative overflow-hidden transform hover:scale-105 transition-all duration-500 animate-scale-in`}
                     >
                       {/* Background Patterns */}
                       {selectedTemplate === 'modern' && (
@@ -311,8 +349,21 @@ const BusinessCardCreator = () => {
                       )}
                       {selectedTemplate === 'luxury' && (
                         <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-2 left-2 w-8 h-8 border border-white opacity-40" />
-                          <div className="absolute bottom-2 right-2 w-6 h-6 border border-white opacity-40 transform rotate-45" />
+                          <div className="absolute top-2 left-2 w-8 h-8 border border-white opacity-40 animate-pulse" />
+                          <div className="absolute bottom-2 right-2 w-6 h-6 border border-white opacity-40 transform rotate-45 animate-pulse" />
+                        </div>
+                      )}
+                      {selectedTemplate === 'holographic' && (
+                        <div className="absolute inset-0">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+                          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse" />
+                        </div>
+                      )}
+                      {selectedTemplate === 'glass' && (
+                        <div className="absolute inset-0">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10" />
+                          <div className="absolute top-2 right-2 w-4 h-4 bg-white/30 rounded-full blur-sm" />
+                          <div className="absolute bottom-4 left-4 w-2 h-8 bg-white/20 blur-sm" />
                         </div>
                       )}
 
@@ -359,10 +410,10 @@ const BusinessCardCreator = () => {
                   <Button
                     onClick={handleDownload}
                     disabled={isDownloading}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary shadow-glow hover:shadow-xl transition-all duration-300 hover-scale"
                     size="lg"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className={`h-4 w-4 mr-2 ${isDownloading ? 'animate-bounce' : ''}`} />
                     {isDownloading ? "Generating..." : "Download Business Card"}
                   </Button>
                 </div>
