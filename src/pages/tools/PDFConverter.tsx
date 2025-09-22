@@ -13,6 +13,11 @@ import { useToast } from "@/hooks/use-toast";
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
+// Fallback for PDF.js worker setup
+if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+}
+
 const PDFConverter = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
@@ -24,26 +29,54 @@ const PDFConverter = () => {
 
   const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {
     try {
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      console.log('Starting PDF text extraction...');
+      
+      // Try to load the PDF document
+      const loadingTask = pdfjs.getDocument({
+        data: arrayBuffer,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/cmaps/',
+        cMapPacked: true,
+      });
+      
+      const pdf = await loadingTask.promise;
+      console.log(`PDF loaded successfully with ${pdf.numPages} pages`);
+      
       let fullText = '';
       
+      // Extract text from each page
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .filter((item): item is any => 'str' in item)
-          .map(item => item.str)
-          .join(' ');
-        
-        if (pageText.trim()) {
-          fullText += `Page ${i}:\n${pageText}\n\n`;
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          
+          let pageText = '';
+          textContent.items.forEach((item: any) => {
+            if (item.str && item.str.trim()) {
+              pageText += item.str + ' ';
+            }
+          });
+          
+          if (pageText.trim()) {
+            fullText += `Page ${i}:\n${pageText.trim()}\n\n`;
+          }
+          
+          console.log(`Extracted text from page ${i}: ${pageText.length} characters`);
+        } catch (pageError) {
+          console.warn(`Failed to extract text from page ${i}:`, pageError);
+          fullText += `Page ${i}: [Text extraction failed for this page]\n\n`;
         }
       }
       
-      return fullText || 'No text content found in the PDF. This might be a scanned PDF or image-based document.';
+      if (!fullText.trim()) {
+        return 'This PDF appears to be image-based or contains no extractable text. You may need OCR processing for this type of document.';
+      }
+      
+      console.log(`Total extracted text: ${fullText.length} characters`);
+      return fullText;
+      
     } catch (error) {
       console.error('PDF text extraction error:', error);
-      throw new Error('Failed to extract text from PDF');
+      return `Error extracting text from PDF: ${error instanceof Error ? error.message : 'Unknown error'}. This might be a corrupted PDF or require special processing.`;
     }
   };
 
@@ -61,13 +94,21 @@ const PDFConverter = () => {
 
       setFile(selectedFile);
       setIsExtracting(true);
+      setExtractedText('');
+      setPdfInfo(null);
+      
+      console.log('File selected:', selectedFile.name, selectedFile.size);
       
       try {
+        console.log('Reading file as array buffer...');
         const arrayBuffer = await selectedFile.arrayBuffer();
+        
+        console.log('Loading PDF document...');
         const pdfDoc = await PDFDocument.load(arrayBuffer);
         const pageCount = pdfDoc.getPageCount();
         const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
         
+        console.log('PDF document loaded, extracting text...');
         // Extract actual text from PDF
         const extractedText = await extractTextFromPDF(arrayBuffer);
         
@@ -82,13 +123,15 @@ const PDFConverter = () => {
           description: `Extracted text from ${pageCount} pages`,
         });
         
+        console.log('PDF processing completed successfully');
+        
       } catch (error) {
         console.error('Error processing PDF:', error);
         setPdfInfo(null);
         setExtractedText('');
         toast({
           title: "Error processing PDF",
-          description: "Failed to read the PDF file. Please try a different file.",
+          description: error instanceof Error ? error.message : "Failed to read the PDF file. Please try a different file.",
           variant: "destructive"
         });
       } finally {
