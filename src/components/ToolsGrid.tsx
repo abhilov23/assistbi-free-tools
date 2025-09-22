@@ -7,7 +7,8 @@ import {
   Link, 
   CreditCard, 
   CheckCircle, 
-  User 
+  User,
+  Scissors
 } from "lucide-react";
 
 const toolsData = [
@@ -66,6 +67,13 @@ const toolsData = [
     icon: User,
     href: "/tools/resume-builder",
     color: "accent",
+  },
+  {
+    title: "Image Background Remover",
+    description: "Remove image backgrounds instantly using advanced AI. Perfect for product photos.",
+    icon: Scissors,
+    href: "/tools/image-background-remover",
+    color: "success",
   },
 ];
 
