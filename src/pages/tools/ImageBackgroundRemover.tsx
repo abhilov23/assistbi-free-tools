@@ -41,7 +41,9 @@ function resizeImageIfNeeded(canvas: HTMLCanvasElement, ctx: CanvasRenderingCont
 const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> => {
   try {
     console.log('Starting background removal process...');
-    const segmenter = await pipeline('image-segmentation', 'Xenova/segformer-b0-finetuned-ade-512-512', {
+    
+    // Use a model specifically designed for background removal/salient object detection
+    const segmenter = await pipeline('image-segmentation', 'briaai/RMBG-1.4', {
       device: 'webgpu',
     });
     
@@ -60,7 +62,7 @@ const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> =
     console.log('Image converted to base64');
     
     // Process the image with the segmentation model
-    console.log('Processing with segmentation model...');
+    console.log('Processing with background removal model...');
     const result = await segmenter(imageData);
     
     console.log('Segmentation result:', result);
@@ -88,10 +90,11 @@ const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> =
     );
     const data = outputImageData.data;
     
-    // Apply inverted mask to alpha channel
-    for (let i = 0; i < result[0].mask.data.length; i++) {
-      // Invert the mask value (1 - value) to keep the subject instead of the background
-      const alpha = Math.round((1 - result[0].mask.data[i]) * 255);
+    // Apply mask to alpha channel - RMBG model outputs foreground mask directly
+    const maskData = result[0].mask.data;
+    for (let i = 0; i < maskData.length; i++) {
+      // Use mask value directly as alpha (normalized to 0-255)
+      const alpha = Math.round(maskData[i] * 255);
       data[i * 4 + 3] = alpha;
     }
     
@@ -115,7 +118,84 @@ const removeBackground = async (imageElement: HTMLImageElement): Promise<Blob> =
     });
   } catch (error) {
     console.error('Error removing background:', error);
-    throw error;
+    
+    // Fallback to a different approach if the primary model fails
+    try {
+      console.log('Trying fallback segmentation approach...');
+      
+      const segmenter = await pipeline('image-segmentation', 'Xenova/detr-resnet-50-panoptic', {
+        device: 'webgpu',
+      });
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get canvas context');
+      
+      resizeImageIfNeeded(canvas, ctx, imageElement);
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      
+      const result = await segmenter(imageData);
+      console.log('Fallback segmentation result:', result);
+      
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        throw new Error('Fallback segmentation failed');
+      }
+      
+      // Find person or main object segments
+      const personSegments = result.filter(segment => 
+        segment.label && (
+          segment.label.toLowerCase().includes('person') ||
+          segment.label.toLowerCase().includes('people') ||
+          segment.label.toLowerCase().includes('human')
+        )
+      );
+      
+      const targetSegment = personSegments.length > 0 ? personSegments[0] : result[0];
+      
+      if (!targetSegment.mask) {
+        throw new Error('No valid mask in fallback result');
+      }
+      
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = canvas.width;
+      outputCanvas.height = canvas.height;
+      const outputCtx = outputCanvas.getContext('2d');
+      
+      if (!outputCtx) throw new Error('Could not get output canvas context');
+      
+      outputCtx.drawImage(canvas, 0, 0);
+      
+      const outputImageData = outputCtx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
+      const data = outputImageData.data;
+      
+      // Apply mask
+      const maskData = targetSegment.mask.data;
+      for (let i = 0; i < maskData.length; i++) {
+        const alpha = Math.round(maskData[i] * 255);
+        data[i * 4 + 3] = alpha;
+      }
+      
+      outputCtx.putImageData(outputImageData, 0, 0);
+      
+      return new Promise((resolve, reject) => {
+        outputCanvas.toBlob(
+          (blob) => {
+            if (blob) {
+              console.log('Fallback processing successful');
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create blob from fallback'));
+            }
+          },
+          'image/png',
+          1.0
+        );
+      });
+      
+    } catch (fallbackError) {
+      console.error('Fallback processing also failed:', fallbackError);
+      throw new Error('Background removal failed with both primary and fallback methods');
+    }
   }
 };
 
