@@ -3,10 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Upload, FileText, Download, AlertCircle, Eye } from "lucide-react";
+import { Upload, FileText, Download, CheckCircle, Eye } from "lucide-react";
 import { PDFDocument } from "pdf-lib";
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import * as pdfjs from 'pdfjs-dist';
+import { useToast } from "@/hooks/use-toast";
+
+// Set up PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const PDFConverter = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -14,80 +19,117 @@ const PDFConverter = () => {
   const [pdfInfo, setPdfInfo] = useState<{pages: number, size: string} | null>(null);
   const [conversionType, setConversionType] = useState<'word' | 'excel' | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const { toast } = useToast();
+
+  const extractTextFromPDF = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+    try {
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .filter((item): item is any => 'str' in item)
+          .map(item => item.str)
+          .join(' ');
+        
+        if (pageText.trim()) {
+          fullText += `Page ${i}:\n${pageText}\n\n`;
+        }
+      }
+      
+      return fullText || 'No text content found in the PDF. This might be a scanned PDF or image-based document.';
+    } catch (error) {
+      console.error('PDF text extraction error:', error);
+      throw new Error('Failed to extract text from PDF');
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select a PDF file smaller than 10MB",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setFile(selectedFile);
+      setIsExtracting(true);
       
-      // Extract PDF info and text for preview
       try {
         const arrayBuffer = await selectedFile.arrayBuffer();
         const pdfDoc = await PDFDocument.load(arrayBuffer);
         const pageCount = pdfDoc.getPageCount();
         const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
         
-        // Extract text from PDF using a more robust approach
-        let allText = '';
-        try {
-          // For demo purposes, we'll create meaningful sample content based on file structure
-          const sampleContent = [
-            "This is the extracted content from your PDF file.",
-            "The document contains structured information that has been successfully parsed.",
-            "",
-            "Key Information:",
-            `• Document Name: ${selectedFile.name}`,
-            `• Number of Pages: ${pageCount}`,
-            `• File Size: ${fileSizeMB} MB`,
-            `• Processing Date: ${new Date().toLocaleDateString()}`,
-            "",
-            "Sample Text Content:",
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-            "",
-            "Structured Data:",
-            "• Headers and subheaders have been identified",
-            "• Paragraph breaks are preserved",
-            "• Lists and bullet points are maintained",
-            "• Tables and formatted content detected",
-            "",
-            "Note: This is a demonstration of PDF text extraction. In a production environment, advanced OCR and text parsing would provide the actual document content with full formatting preservation."
-          ];
-          
-          allText = sampleContent.join('\n');
-          
-        } catch (textError) {
-          console.error('Text extraction error:', textError);
-          allText = `PDF loaded successfully (${pageCount} pages). Advanced text extraction available with backend integration.`;
-        }
+        // Extract actual text from PDF
+        const extractedText = await extractTextFromPDF(arrayBuffer);
         
-        setExtractedText(allText);
+        setExtractedText(extractedText);
         setPdfInfo({
           pages: pageCount,
           size: fileSizeMB
         });
+
+        toast({
+          title: "PDF processed successfully",
+          description: `Extracted text from ${pageCount} pages`,
+        });
+        
       } catch (error) {
-        console.error('Error reading PDF:', error);
+        console.error('Error processing PDF:', error);
         setPdfInfo(null);
         setExtractedText('');
+        toast({
+          title: "Error processing PDF",
+          description: "Failed to read the PDF file. Please try a different file.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsExtracting(false);
       }
     }
   };
 
   const handleConvert = async (type: 'word' | 'excel') => {
-    if (!file) return;
+    if (!file || !extractedText) return;
     
     setIsConverting(true);
     setConversionType(type);
     
-    // Simulate realistic conversion timing
-    setTimeout(async () => {
-      setIsConverting(false);
-      
+    try {
       const fileName = file.name.replace('.pdf', '');
       const currentDate = new Date().toLocaleDateString();
       
       if (type === 'word') {
-        // Create proper DOCX file using docx library
+        // Create proper DOCX file with extracted content
+        const paragraphs = extractedText.split('\n').map(line => {
+          if (line.trim() === '') {
+            return new Paragraph({
+              children: [new TextRun({ text: "" })],
+            });
+          }
+          
+          // Check if line looks like a header (starts with "Page", all caps, etc.)
+          const isHeader = line.startsWith('Page ') || line === line.toUpperCase() && line.length < 100;
+          
+          return new Paragraph({
+            children: [
+              new TextRun({
+                text: line,
+                bold: isHeader,
+                size: isHeader ? 24 : 22,
+              }),
+            ],
+          });
+        });
+
         const doc = new Document({
           sections: [{
             properties: {},
@@ -102,110 +144,92 @@ const PDFConverter = () => {
                 ],
               }),
               new Paragraph({
-                children: [new TextRun({ text: "" })], // Empty line
+                children: [new TextRun({ text: "" })],
               }),
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: `Conversion Date: ${currentDate}`,
+                    text: `Conversion Date: ${currentDate} | Pages: ${pdfInfo?.pages} | Size: ${pdfInfo?.size} MB`,
                     italics: true,
+                    size: 20,
                   }),
                 ],
               }),
               new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `Pages: ${pdfInfo?.pages || 'Unknown'} | Size: ${pdfInfo?.size || 'Unknown'} MB`,
-                    italics: true,
-                  }),
-                ],
+                children: [new TextRun({ text: "" })],
               }),
-              new Paragraph({
-                children: [new TextRun({ text: "" })], // Empty line
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Extracted Content:",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-              // Add extracted text content
-              ...extractedText.split('\n').map(line => 
-                new Paragraph({
-                  children: [new TextRun({ text: line })],
-                })
-              ),
-              new Paragraph({
-                children: [new TextRun({ text: "" })], // Empty line
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Note: ",
-                    bold: true,
-                  }),
-                  new TextRun({
-                    text: "This is a demonstration. For full PDF text extraction with proper formatting, images, and tables, connect to Supabase for advanced OCR processing.",
-                    italics: true,
-                  }),
-                ],
-              }),
+              ...paragraphs,
             ],
           }],
         });
 
-        // Generate and download DOCX file
         const blob = await Packer.toBlob(doc);
         const element = document.createElement('a');
         element.href = URL.createObjectURL(blob);
         element.download = `${fileName}.docx`;
         element.click();
         
+        toast({
+          title: "Word document created",
+          description: `${fileName}.docx has been downloaded`,
+        });
+        
       } else {
-        // Create Excel file with extracted content
+        // Create Excel file with structured data
+        const lines = extractedText.split('\n').filter(line => line.trim() !== '');
         const worksheetData = [
-          ['PDF to Excel Conversion'],
+          ['PDF to Excel Conversion Report'],
           [''],
+          ['File Information'],
           ['Original File:', file.name],
           ['Conversion Date:', currentDate],
           ['Pages:', pdfInfo?.pages || 'Unknown'],
           ['File Size (MB):', pdfInfo?.size || 'Unknown'],
           [''],
-          ['Extracted Text Content:'],
+          ['Extracted Text Content'],
+          ['Line #', 'Content'],
+          ...lines.map((line, index) => [index + 1, line]),
           [''],
-          ...extractedText.split('\n').map(line => [line]),
-          [''],
-          ['Demo Data Table:'],
-          ['Item', 'Description', 'Value'],
-          ['PDF Pages', 'Total page count', pdfInfo?.pages || 'Unknown'],
-          ['File Size', 'Size in megabytes', pdfInfo?.size || 'Unknown'],
-          ['Format', 'Original document type', 'PDF'],
-          [''],
-          ['Note:', 'For advanced PDF data extraction and table recognition, connect to Supabase backend']
+          ['Summary'],
+          ['Total Lines:', lines.length],
+          ['Character Count:', extractedText.length],
+          ['Word Count:', extractedText.split(' ').filter(word => word.trim() !== '').length],
         ];
         
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         
-        // Style the header
-        if (worksheet['A1']) {
-          worksheet['A1'].s = {
-            font: { bold: true, sz: 14 },
-            alignment: { horizontal: 'center' }
-          };
-        }
+        // Style headers
+        ['A1', 'A3', 'A9'].forEach(cell => {
+          if (worksheet[cell]) {
+            worksheet[cell].s = {
+              font: { bold: true, sz: 14 },
+              fill: { fgColor: { rgb: "E3F2FD" } }
+            };
+          }
+        });
         
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'PDF Content');
         
-        // Generate Excel file and download
         XLSX.writeFile(workbook, `${fileName}.xlsx`);
+        
+        toast({
+          title: "Excel spreadsheet created",
+          description: `${fileName}.xlsx has been downloaded`,
+        });
       }
       
+    } catch (error) {
+      console.error('Conversion error:', error);
+      toast({
+        title: "Conversion failed",
+        description: "An error occurred during conversion. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConverting(false);
       setConversionType(null);
-    }, 2000);
+    }
   };
 
   return (
@@ -277,7 +301,12 @@ const PDFConverter = () => {
                       <div>
                         <p className="font-medium text-foreground">{file.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {pdfInfo ? `${pdfInfo.pages} pages • ${pdfInfo.size} MB` : `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                          {isExtracting 
+                            ? "Extracting text..." 
+                            : pdfInfo 
+                            ? `${pdfInfo.pages} pages • ${pdfInfo.size} MB`
+                            : `${(file.size / 1024 / 1024).toFixed(2)} MB`
+                          }
                         </p>
                       </div>
                     </div>
@@ -285,15 +314,17 @@ const PDFConverter = () => {
                       onClick={() => {
                         setFile(null);
                         setPdfInfo(null);
+                        setExtractedText('');
                       }}
                       variant="ghost"
                       size="sm"
+                      disabled={isExtracting}
                     >
                       Remove
                     </Button>
                   </div>
                   
-                  {pdfInfo && (
+                  {pdfInfo && !isExtracting && (
                     <div className="grid grid-cols-3 gap-4 p-3 bg-background/50 rounded-lg">
                       <div className="text-center">
                         <div className="text-lg font-bold text-primary">{pdfInfo.pages}</div>
@@ -304,8 +335,17 @@ const PDFConverter = () => {
                         <div className="text-xs text-muted-foreground">MB</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-accent">PDF</div>
+                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
                         <div className="text-xs text-muted-foreground">Ready</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {extractedText && !isExtracting && (
+                    <div className="space-y-2">
+                      <h5 className="text-sm font-medium text-foreground">Text Preview:</h5>
+                      <div className="bg-background/50 rounded p-3 max-h-40 overflow-y-auto text-sm text-muted-foreground">
+                        {extractedText.slice(0, 300)}...
                       </div>
                     </div>
                   )}
@@ -313,13 +353,13 @@ const PDFConverter = () => {
               )}
 
               {/* Convert Options */}
-              {file && (
+              {file && extractedText && !isExtracting && (
                 <div className="space-y-4">
                   <h4 className="font-semibold text-foreground">Choose Output Format</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
                       onClick={() => handleConvert('word')}
-                      disabled={isConverting}
+                      disabled={isConverting || isExtracting}
                       className="flex items-center gap-2 h-12"
                       variant="default"
                     >
@@ -334,7 +374,7 @@ const PDFConverter = () => {
                     </Button>
                     <Button
                       onClick={() => handleConvert('excel')}
-                      disabled={isConverting}
+                      disabled={isConverting || isExtracting}
                       className="flex items-center gap-2 h-12"
                       variant="secondary"
                     >
@@ -347,19 +387,6 @@ const PDFConverter = () => {
                         </>
                       )}
                     </Button>
-                  </div>
-                  
-                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="font-medium text-blue-800 dark:text-blue-200 mb-1">Backend Integration Required</p>
-                        <p className="text-blue-700 dark:text-blue-300">
-                          Full PDF conversion requires backend processing with OCR and document analysis. 
-                          Connect to Supabase to enable real PDF to Word/Excel conversion with proper formatting, tables, and images.
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -384,7 +411,7 @@ const PDFConverter = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+                <Card>
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-foreground mb-2">
                     Is my data secure?
@@ -398,18 +425,13 @@ const PDFConverter = () => {
 
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-2">
-                        Demo Mode Notice
-                      </h3>
-                      <p className="text-muted-foreground">
-                        This is a demonstration interface. In the full version, actual PDF conversion 
-                        would be performed using advanced OCR and document processing algorithms.
-                      </p>
-                    </div>
-                  </div>
+                  <h3 className="font-semibold text-foreground mb-2">
+                    What about scanned PDFs or images?
+                  </h3>
+                  <p className="text-muted-foreground">
+                    This converter works best with text-based PDFs. For scanned documents or image-based PDFs, 
+                    you may need OCR (Optical Character Recognition) capabilities which require server-side processing.
+                  </p>
                 </CardContent>
               </Card>
             </div>
