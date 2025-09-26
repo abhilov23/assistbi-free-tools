@@ -9,13 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { PenTool, Copy, Wand2, FileText, Mail, MessageSquare, Lightbulb } from "lucide-react";
+import { aiApiManager } from "@/lib/ai-api-manager";
 
 const ContentGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [currentProvider, setCurrentProvider] = useState<string>("Multiple AI Providers");
 
-  // Get API key from environment variable
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  // Check available AI providers
+  const availableProviders = aiApiManager.getAvailableProviders();
+  const hasAnyProvider = availableProviders.length > 0;
   
   // Blog Post States
   const [blogTopic, setBlogTopic] = useState("");
@@ -155,8 +158,8 @@ const ContentGenerator = () => {
   };
 
   const handleGenerate = async (type: string) => {
-    if (!geminiApiKey) {
-      alert("Gemini API key not found in environment variables");
+    if (!hasAnyProvider) {
+      alert("No AI API keys found. Please add at least one API key in your environment variables.");
       return;
     }
 
@@ -188,39 +191,20 @@ const ContentGenerator = () => {
     }
 
     setIsGenerating(true);
+    setCurrentProvider("Connecting...");
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          }
-        }),
-      });
-
-      const result = await response.json();
+      const content = await aiApiManager.makeRequest(
+        prompt,
+        ['gemini', 'openai', 'anthropic']
+      );
       
-      if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
-        const content = result.candidates[0].content.parts[0].text;
-        setGeneratedContent(content);
-      } else {
-        throw new Error("No content generated");
-      }
+      setGeneratedContent(content);
+      setCurrentProvider(`Generated using ${availableProviders.join(', ')} providers`);
     } catch (error) {
       console.error("Content generation error:", error);
-      alert("Error generating content. Please check your API key and try again.");
+      alert("Error generating content with all available providers. Please check your API keys and try again.");
+      setCurrentProvider("Error occurred");
     } finally {
       setIsGenerating(false);
     }
@@ -258,8 +242,10 @@ const ContentGenerator = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Content Settings</span>
-                  {!geminiApiKey && (
-                    <span className="text-sm text-destructive">⚠️ API Key Missing</span>
+                  {!hasAnyProvider ? (
+                    <span className="text-sm text-destructive">⚠️ No API Keys</span>
+                  ) : (
+                    <span className="text-sm text-primary">✓ {availableProviders.length} Provider(s)</span>
                   )}
                 </CardTitle>
                 <CardDescription>
@@ -327,7 +313,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("blog")} 
-                      disabled={isGenerating || !geminiApiKey || !blogTopic}
+                      disabled={isGenerating || !hasAnyProvider || !blogTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Blog Post"}
@@ -371,7 +357,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("email")} 
-                      disabled={isGenerating || !geminiApiKey || !emailSubject || !emailContext}
+                      disabled={isGenerating || !hasAnyProvider || !emailSubject || !emailContext}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Email"}
@@ -422,7 +408,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("social")} 
-                      disabled={isGenerating || !geminiApiKey || !socialTopic}
+                      disabled={isGenerating || !hasAnyProvider || !socialTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Social Post"}

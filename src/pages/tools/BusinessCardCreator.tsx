@@ -8,6 +8,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
 import html2canvas from "html2canvas";
+import { aiApiManager } from "@/lib/ai-api-manager";
 
 const BusinessCardCreator = () => {
   const [cardData, setCardData] = useState({
@@ -20,13 +21,14 @@ const BusinessCardCreator = () => {
     address: "",
     linkedin: "",
   });
-  const [selectedTemplate, setSelectedTemplate] = useState("modern");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("modern");
 
-  // Get API key from environment variable
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  // Check available AI providers
+  const availableProviders = aiApiManager.getAvailableProviders();
+  const hasAnyProvider = availableProviders.length > 0;
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
@@ -60,8 +62,8 @@ const BusinessCardCreator = () => {
   };
 
   const generateWithAI = async () => {
-    if (!geminiApiKey) {
-      alert("Gemini API key not found in environment variables");
+    if (!hasAnyProvider) {
+      alert("No AI API keys found. Please add at least one API key in your environment variables.");
       return;
     }
 
@@ -73,15 +75,7 @@ const BusinessCardCreator = () => {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + geminiApiKey, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Create professional business card information based on this description: "${aiPrompt}"
+      const prompt = `Create professional business card information based on this description: "${aiPrompt}"
 
 Please provide a JSON response with the following structure:
 {
@@ -95,44 +89,33 @@ Please provide a JSON response with the following structure:
   "linkedin": "linkedin.com/in/profile"
 }
 
-Make it realistic and professional. Generate appropriate contact information that fits the business description.`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 1000,
-          }
-        }),
-      });
+Make it realistic and professional. Generate appropriate contact information that fits the business description.`;
 
-      const result = await response.json();
+      const aiText = await aiApiManager.makeRequest(
+        prompt,
+        ['gemini', 'openai', 'anthropic']
+      );
       
-      if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
-        let aiText = result.candidates[0].content.parts[0].text;
-        
-        // Extract JSON from the response
-        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const aiData = JSON.parse(jsonMatch[0]);
-          setCardData({
-            name: aiData.name || "",
-            title: aiData.title || "",
-            company: aiData.company || "",
-            email: aiData.email || "",
-            phone: aiData.phone || "",
-            website: aiData.website || "",
-            address: aiData.address || "",
-            linkedin: aiData.linkedin || "",
-          });
-        } else {
-          throw new Error("Could not parse AI response");
-        }
+      // Extract JSON from the response
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const aiData = JSON.parse(jsonMatch[0]);
+        setCardData({
+          name: aiData.name || "",
+          title: aiData.title || "",
+          company: aiData.company || "",
+          email: aiData.email || "",
+          phone: aiData.phone || "",
+          website: aiData.website || "",
+          address: aiData.address || "",
+          linkedin: aiData.linkedin || "",
+        });
+      } else {
+        throw new Error("Could not parse AI response");
       }
     } catch (error) {
       console.error("Error generating with AI:", error);
-      alert("Error generating business card content. Please try again.");
+      alert("Error generating business card content with all available providers. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -341,7 +324,7 @@ Make it realistic and professional. Generate appropriate contact information tha
                   </div>
                   <Button 
                     onClick={generateWithAI} 
-                    disabled={isGenerating || !geminiApiKey || !aiPrompt}
+                    disabled={isGenerating || !hasAnyProvider || !aiPrompt}
                     className="w-full"
                   >
                     {isGenerating ? (
@@ -356,9 +339,9 @@ Make it realistic and professional. Generate appropriate contact information tha
                       </>
                     )}
                   </Button>
-                  {!geminiApiKey && (
+                  {!hasAnyProvider && (
                     <p className="text-sm text-destructive">
-                      ⚠️ Gemini API key not found in environment variables
+                      ⚠️ No AI API keys found in environment variables
                     </p>
                   )}
                 </div>

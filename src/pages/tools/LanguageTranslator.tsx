@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Languages, ArrowRightLeft, Copy, Volume2, VolumeX } from "lucide-react";
+import { aiApiManager } from "@/lib/ai-api-manager";
 
 const LanguageTranslator = () => {
   const [inputText, setInputText] = useState("");
@@ -17,8 +18,9 @@ const LanguageTranslator = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Get API key from environment variable
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  // Check available AI providers
+  const availableProviders = aiApiManager.getAvailableProviders();
+  const hasAnyProvider = availableProviders.length > 0;
 
   const languages = [
     { code: "auto", name: "Auto-detect" },
@@ -94,8 +96,8 @@ const LanguageTranslator = () => {
   ];
 
   const handleTranslate = async () => {
-    if (!geminiApiKey) {
-      alert("Gemini API key not found in environment variables");
+    if (!hasAnyProvider) {
+      alert("No AI API keys found. Please add at least one API key in your environment variables.");
       return;
     }
 
@@ -110,39 +112,19 @@ const LanguageTranslator = () => {
       const sourceLangName = languages.find(lang => lang.code === sourceLang)?.name || "auto-detect";
       const targetLangName = languages.find(lang => lang.code === targetLang)?.name || "English";
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Translate the following text from ${sourceLangName} to ${targetLangName}. Only provide the translation, no additional text or explanations:
+      const prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}. Only provide the translation, no additional text or explanations:
 
-"${inputText}"`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            topK: 1,
-            topP: 1,
-            maxOutputTokens: 2000,
-          }
-        }),
-      });
+"${inputText}"`;
 
-      const result = await response.json();
+      const translation = await aiApiManager.makeRequest(
+        prompt,
+        ['gemini', 'openai', 'anthropic']
+      );
       
-      if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
-        const translation = result.candidates[0].content.parts[0].text.trim();
-        setTranslatedText(translation);
-      } else {
-        throw new Error("No translation received");
-      }
+      setTranslatedText(translation.trim());
     } catch (error) {
       console.error("Translation error:", error);
-      alert("Error translating text. Please check your API key and try again.");
+      alert("Error translating text with all available providers. Please check your API keys and try again.");
     } finally {
       setIsTranslating(false);
     }
@@ -204,12 +186,14 @@ const LanguageTranslator = () => {
           {/* Translation Interface */}
           <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Translation</span>
-                {!geminiApiKey && (
-                  <span className="text-sm text-destructive">⚠️ API Key Missing</span>
-                )}
-              </CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Translation</span>
+                  {!hasAnyProvider ? (
+                    <span className="text-sm text-destructive">⚠️ No API Keys</span>
+                  ) : (
+                    <span className="text-sm text-primary">✓ {availableProviders.length} Provider(s)</span>
+                  )}
+                </CardTitle>
               <CardDescription>
                 Select languages and enter text to translate
               </CardDescription>
@@ -331,7 +315,7 @@ const LanguageTranslator = () => {
               {/* Translate Button */}
               <Button 
                 onClick={handleTranslate} 
-                disabled={isTranslating || !geminiApiKey || !inputText}
+                disabled={isTranslating || !hasAnyProvider || !inputText}
                 className="w-full"
                 size="lg"
               >
