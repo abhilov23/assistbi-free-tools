@@ -4,12 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Key, Eye, EyeOff, Zap } from "lucide-react";
+import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { simpleGrammarCheck, SimpleIssue } from "@/lib/simple-grammar-checker";
 import { aiApiManager } from "@/lib/ai-api-manager";
 
 interface Issue {
@@ -45,68 +44,6 @@ const GrammarChecker = () => {
   // Check if Grammar Checker has API key
   const hasApiKey = aiApiManager.hasKey('grammar-checker');
 
-  // Simple grammar check using custom checker
-  const handleSimpleCheck = () => {
-    if (!text.trim()) {
-      toast({
-        title: "No text provided",
-        description: "Please enter some text to check",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const simpleSuggestions: SimpleIssue[] = simpleGrammarCheck(text);
-    const convertedIssues: Issue[] = simpleSuggestions.map((suggestion, index) => {
-      let type: Issue['type'] = 'style';
-      let severity: Issue['severity'] = 'low';
-      
-      if (suggestion.reason.includes('passive voice')) {
-        type = 'passive-voice';
-        severity = 'medium';
-      } else if (suggestion.reason.includes('weasel word')) {
-        type = 'weasel-words';
-        severity = 'medium';
-      } else if (suggestion.reason.includes('adverb')) {
-        type = 'adverbs';
-        severity = 'low';
-      } else if (suggestion.reason.includes('cliche')) {
-        type = 'cliches';
-        severity = 'low';
-      } else if (suggestion.reason.includes('illusion')) {
-        type = 'illusion';
-        severity = 'medium';
-      }
-
-      return {
-        type,
-        text: text.substring(suggestion.index, suggestion.index + suggestion.offset),
-        suggestion: suggestion.reason,
-        explanation: `Consider revising: ${suggestion.reason}`,
-        severity,
-        offset: suggestion.offset
-      };
-    });
-
-    setIssues(convertedIssues);
-    setCorrectedText("");
-    
-    // Calculate a simple score
-    const score = Math.max(20, 100 - (convertedIssues.length * 5));
-    setOverallScore(score);
-    
-    setImprovements([
-      "Consider varying your sentence structure",
-      "Look for opportunities to use active voice",
-      "Remove unnecessary words and phrases",
-      "Check for repeated words or phrases"
-    ]);
-
-    toast({
-      title: "Simple Check Complete",
-      description: `Found ${convertedIssues.length} potential issues`,
-    });
-  };
 
   // Initialize speech synthesis
   useEffect(() => {
@@ -303,52 +240,23 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* Analysis Type Selection */}
-          <Tabs defaultValue="simple" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="simple" className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Simple Check (Offline)
-              </TabsTrigger>
-              <TabsTrigger value="ai" className="flex items-center gap-2">
-                <Key className="h-4 w-5" />
-                Advanced Check (AI)
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="simple">
-              <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Offline Grammar Check
-                  </CardTitle>
-                  <CardDescription>
-                    Fast offline analysis using the write-good library. No API key required.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="ai">
-              <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Key className="h-5 w-5 text-primary" />
-                    AI-Powered Grammar Check
-                  </CardTitle>
-                  <CardDescription>
-                    Advanced grammar, spelling, and style analysis using Gemini AI.{" "}
-                    {!hasApiKey ? (
-                      <span className="text-destructive">Grammar Checker API key not found (VITE_GEMINI_GRAMMAR_CHECKER_API_KEY).</span>
-                    ) : (
-                      <span className="text-primary">✓ Grammar Checker Ready</span>
-                    )}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {/* AI Status Card */}
+          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-primary" />
+                AI Grammar Checker Status
+              </CardTitle>
+              <CardDescription>
+                Advanced grammar, spelling, and style analysis powered by Gemini AI.{" "}
+                {!hasApiKey ? (
+                  <span className="text-destructive">⚠️ API key not found. Please add VITE_GEMINI_GRAMMAR_CHECKER_API_KEY to your environment variables.</span>
+                ) : (
+                  <span className="text-primary">✓ AI Grammar Checker Ready</span>
+                )}
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
           {/* Text Input Area */}
           <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
@@ -398,26 +306,16 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                 <span>{text.length} characters • {text.split(/\s+/).filter(word => word.length > 0).length} words</span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                <Button
-                  onClick={handleSimpleCheck}
-                  disabled={!text.trim()}
-                  className="flex-1"
-                  size="lg"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  {isChecking ? "Checking..." : "Simple Check (Offline)"}
-                </Button>
-                
+              {/* Action Button */}
+              <div className="flex justify-center">
                 <Button
                   onClick={handleCheck}
                   disabled={!text.trim() || !hasApiKey || isChecking}
-                  className="flex-1"
+                  className="w-full max-w-md"
                   size="lg"
-                  variant="secondary"
                 >
-                  {isChecking ? "Analyzing..." : "Advanced Check (AI)"}
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {isChecking ? "Analyzing with AI..." : "Check Grammar with AI"}
                 </Button>
               </div>
             </CardContent>
@@ -512,11 +410,11 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
             <Card className="shadow-subtle border bg-card/30 backdrop-blur-sm hover-scale transition-all duration-300">
               <CardContent className="p-6 text-center space-y-3">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                  <Zap className="h-6 w-6 text-primary" />
+                  <AlertCircle className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold">Offline Analysis</h3>
+                <h3 className="font-semibold">AI-Powered Analysis</h3>
                 <p className="text-sm text-muted-foreground">
-                  Fast, privacy-focused checking that works without internet connection.
+                  Advanced grammar, spelling, and style checking using Gemini AI technology.
                 </p>
               </CardContent>
             </Card>
