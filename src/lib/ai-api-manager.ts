@@ -4,15 +4,32 @@ export type AITool = 'business-card' | 'translator' | 'content-generator' | 'gra
 
 class AIApiManager {
   private getToolApiKey(tool: AITool): string | null {
+    // Debug logging
+    console.log('Getting API key for tool:', tool);
+    console.log('Environment variables:', {
+      business: import.meta.env.VITE_GEMINI_BUSINESS_CARD_API_KEY,
+      translator: import.meta.env.VITE_GEMINI_TRANSLATOR_API_KEY,
+      content: import.meta.env.VITE_GEMINI_CONTENT_GENERATOR_API_KEY,
+      grammar: import.meta.env.VITE_GEMINI_GRAMMAR_CHECKER_API_KEY
+    });
+
+    // Temporary hardcoded keys as fallback
+    const fallbackKeys = {
+      'business-card': 'AIzaSyCh24UK7ZRCbGKiqmSNdbTkCaubs2dFugY',
+      'translator': 'AIzaSyCRypuulmrza_jqhzYcRGpMhh3Qpec1Vr4',
+      'content-generator': 'AIzaSyBPuj3nzXLmu2rgwao2NHNy1waglQPLprY',
+      'grammar-checker': 'AIzaSyB6ZUGx78hFbXQiMxTjyu_jeGri9p1BLiw'
+    };
+
     switch (tool) {
       case 'business-card':
-        return import.meta.env.VITE_GEMINI_BUSINESS_CARD_API_KEY || null;
+        return import.meta.env.VITE_GEMINI_BUSINESS_CARD_API_KEY || fallbackKeys['business-card'];
       case 'translator':
-        return import.meta.env.VITE_GEMINI_TRANSLATOR_API_KEY || null;
+        return import.meta.env.VITE_GEMINI_TRANSLATOR_API_KEY || fallbackKeys['translator'];
       case 'content-generator':
-        return import.meta.env.VITE_GEMINI_CONTENT_GENERATOR_API_KEY || null;
+        return import.meta.env.VITE_GEMINI_CONTENT_GENERATOR_API_KEY || fallbackKeys['content-generator'];
       case 'grammar-checker':
-        return import.meta.env.VITE_GEMINI_GRAMMAR_CHECKER_API_KEY || null;
+        return import.meta.env.VITE_GEMINI_GRAMMAR_CHECKER_API_KEY || fallbackKeys['grammar-checker'];
       default:
         return null;
     }
@@ -20,6 +37,7 @@ class AIApiManager {
 
   hasKey(tool: AITool): boolean {
     const key = this.getToolApiKey(tool);
+    console.log('HasKey check for', tool, ':', key ? 'FOUND' : 'NOT FOUND');
     return !!(key && key !== `your_gemini_${tool.replace('-', '_')}_api_key_here`);
   }
 
