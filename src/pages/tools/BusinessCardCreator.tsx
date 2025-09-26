@@ -9,8 +9,10 @@ import Footer from "@/components/Footer";
 import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { aiApiManager } from "@/lib/ai-api-manager";
+import { useToast } from "@/hooks/use-toast";
 
 const BusinessCardCreator = () => {
+  const { toast } = useToast();
   const [cardData, setCardData] = useState({
     name: "",
     title: "",
@@ -111,7 +113,12 @@ Make it realistic and professional. Generate appropriate contact information tha
       }
     } catch (error) {
       console.error("Error generating with AI:", error);
-      alert("Error generating business card content. Please check your API key and try again.");
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Error generating business card content. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
     } finally {
       setIsGenerating(false);
     }
