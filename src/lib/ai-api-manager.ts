@@ -66,6 +66,13 @@ class AIApiManager {
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        
+        if (response.status === 429) {
+          // Handle quota exceeded specifically
+          throw new Error(`Quota exceeded for ${tool}. Your Gemini API free tier limit has been reached. Please wait or upgrade your API plan.`);
+        }
+        
         throw new Error(`Gemini API error for ${tool}: ${response.status}`);
       }
 
