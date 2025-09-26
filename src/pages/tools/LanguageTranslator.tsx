@@ -18,9 +18,8 @@ const LanguageTranslator = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Check available AI providers
-  const availableProviders = aiApiManager.getAvailableProviders();
-  const hasAnyProvider = availableProviders.length > 0;
+  // Check if Language Translator has API key
+  const hasApiKey = aiApiManager.hasKey('translator');
 
   const languages = [
     { code: "auto", name: "Auto-detect" },
@@ -96,8 +95,8 @@ const LanguageTranslator = () => {
   ];
 
   const handleTranslate = async () => {
-    if (!hasAnyProvider) {
-      alert("No AI API keys found. Please add at least one API key in your environment variables.");
+    if (!hasApiKey) {
+      alert("Language Translator API key not found. Please add VITE_GEMINI_TRANSLATOR_API_KEY to your environment variables.");
       return;
     }
 
@@ -116,15 +115,12 @@ const LanguageTranslator = () => {
 
 "${inputText}"`;
 
-      const translation = await aiApiManager.makeRequest(
-        prompt,
-        ['gemini', 'openai', 'anthropic']
-      );
+      const translation = await aiApiManager.makeRequest('translator', prompt);
       
       setTranslatedText(translation.trim());
     } catch (error) {
       console.error("Translation error:", error);
-      alert("Error translating text with all available providers. Please check your API keys and try again.");
+      alert("Error translating text. Please check your API key and try again.");
     } finally {
       setIsTranslating(false);
     }
@@ -188,10 +184,10 @@ const LanguageTranslator = () => {
             <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Translation</span>
-                  {!hasAnyProvider ? (
-                    <span className="text-sm text-destructive">⚠️ No API Keys</span>
+                  {!hasApiKey ? (
+                    <span className="text-sm text-destructive">⚠️ Translator API Key Missing</span>
                   ) : (
-                    <span className="text-sm text-primary">✓ {availableProviders.length} Provider(s)</span>
+                    <span className="text-sm text-primary">✓ Translator Ready</span>
                   )}
                 </CardTitle>
               <CardDescription>
@@ -315,7 +311,7 @@ const LanguageTranslator = () => {
               {/* Translate Button */}
               <Button 
                 onClick={handleTranslate} 
-                disabled={isTranslating || !hasAnyProvider || !inputText}
+                disabled={isTranslating || !hasApiKey || !inputText}
                 className="w-full"
                 size="lg"
               >

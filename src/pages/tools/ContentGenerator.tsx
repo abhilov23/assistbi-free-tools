@@ -16,9 +16,8 @@ const ContentGenerator = () => {
   const [generatedContent, setGeneratedContent] = useState("");
   const [currentProvider, setCurrentProvider] = useState<string>("Multiple AI Providers");
 
-  // Check available AI providers
-  const availableProviders = aiApiManager.getAvailableProviders();
-  const hasAnyProvider = availableProviders.length > 0;
+  // Check if Content Generator has API key
+  const hasApiKey = aiApiManager.hasKey('content-generator');
   
   // Blog Post States
   const [blogTopic, setBlogTopic] = useState("");
@@ -158,8 +157,8 @@ const ContentGenerator = () => {
   };
 
   const handleGenerate = async (type: string) => {
-    if (!hasAnyProvider) {
-      alert("No AI API keys found. Please add at least one API key in your environment variables.");
+    if (!hasApiKey) {
+      alert("Content Generator API key not found. Please add VITE_GEMINI_CONTENT_GENERATOR_API_KEY to your environment variables.");
       return;
     }
 
@@ -191,19 +190,16 @@ const ContentGenerator = () => {
     }
 
     setIsGenerating(true);
-    setCurrentProvider("Connecting...");
+    setCurrentProvider("Generating...");
     
     try {
-      const content = await aiApiManager.makeRequest(
-        prompt,
-        ['gemini', 'openai', 'anthropic']
-      );
+      const content = await aiApiManager.makeRequest('content-generator', prompt);
       
       setGeneratedContent(content);
-      setCurrentProvider(`Generated using ${availableProviders.join(', ')} providers`);
+      setCurrentProvider("Generated using Gemini API");
     } catch (error) {
       console.error("Content generation error:", error);
-      alert("Error generating content with all available providers. Please check your API keys and try again.");
+      alert("Error generating content. Please check your API key and try again.");
       setCurrentProvider("Error occurred");
     } finally {
       setIsGenerating(false);
@@ -242,10 +238,10 @@ const ContentGenerator = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Content Settings</span>
-                  {!hasAnyProvider ? (
-                    <span className="text-sm text-destructive">⚠️ No API Keys</span>
+                  {!hasApiKey ? (
+                    <span className="text-sm text-destructive">⚠️ Content Generator API Key Missing</span>
                   ) : (
-                    <span className="text-sm text-primary">✓ {availableProviders.length} Provider(s)</span>
+                    <span className="text-sm text-primary">✓ Content Generator Ready</span>
                   )}
                 </CardTitle>
                 <CardDescription>
@@ -313,7 +309,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("blog")} 
-                      disabled={isGenerating || !hasAnyProvider || !blogTopic}
+                      disabled={isGenerating || !hasApiKey || !blogTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Blog Post"}
@@ -357,7 +353,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("email")} 
-                      disabled={isGenerating || !hasAnyProvider || !emailSubject || !emailContext}
+                      disabled={isGenerating || !hasApiKey || !emailSubject || !emailContext}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Email"}
@@ -408,7 +404,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("social")} 
-                      disabled={isGenerating || !hasAnyProvider || !socialTopic}
+                      disabled={isGenerating || !hasApiKey || !socialTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Social Post"}

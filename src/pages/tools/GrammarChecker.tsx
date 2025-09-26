@@ -47,10 +47,8 @@ const GrammarChecker = () => {
   const [improvements, setImprovements] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Check available AI providers
-  const availableProviders = aiApiManager.getAvailableProviders();
-  const hasPerplexityProvider = aiApiManager.hasKeys('perplexity');
-  const hasAnyProvider = availableProviders.length > 0;
+  // Check if Grammar Checker has API key
+  const hasApiKey = aiApiManager.hasKey('grammar-checker');
 
   // Simple grammar check using write-good library
   const handleSimpleCheck = () => {
@@ -178,10 +176,10 @@ const GrammarChecker = () => {
       return;
     }
 
-    if (!hasAnyProvider) {
+    if (!hasApiKey) {
       toast({
         title: "API Key Required",
-        description: "No AI API keys found in environment variables. Please add at least one API key.",
+        description: "Grammar Checker API key not found. Please add VITE_GEMINI_GRAMMAR_CHECKER_API_KEY to your environment variables.",
         variant: "destructive"
       });
       return;
@@ -216,11 +214,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
 
 "${text}"`;
 
-      const response = await aiApiManager.makeRequest(
-        prompt,
-        hasPerplexityProvider ? ['perplexity', 'gemini', 'openai', 'anthropic'] : ['gemini', 'openai', 'anthropic'],
-        systemMessage
-      );
+      const response = await aiApiManager.makeRequest('grammar-checker', prompt, systemMessage);
 
       // Try to parse JSON from response
       let analysisData: GrammarResponse;
@@ -253,7 +247,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
       console.error('Grammar check error:', error);
       toast({
         title: "Analysis Failed",
-        description: "Error analyzing text with available AI providers. Please try again.",
+        description: "Error analyzing text. Please check your API key and try again.",
         variant: "destructive"
       });
     } finally {
@@ -349,11 +343,11 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                     AI-Powered Grammar Check
                   </CardTitle>
                   <CardDescription>
-                    Advanced grammar, spelling, and style analysis using multiple AI providers.{" "}
-                    {!hasAnyProvider ? (
-                      <span className="text-destructive">No API keys found in environment variables.</span>
+                    Advanced grammar, spelling, and style analysis using Gemini AI.{" "}
+                    {!hasApiKey ? (
+                      <span className="text-destructive">Grammar Checker API key not found (VITE_GEMINI_GRAMMAR_CHECKER_API_KEY).</span>
                     ) : (
-                      <span className="text-primary">✓ {availableProviders.length} provider(s) available</span>
+                      <span className="text-primary">✓ Grammar Checker Ready</span>
                     )}
                   </CardDescription>
                 </CardHeader>
@@ -423,7 +417,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                 
                 <Button
                   onClick={handleCheck}
-                  disabled={!text.trim() || !hasAnyProvider || isChecking}
+                  disabled={!text.trim() || !hasApiKey || isChecking}
                   className="flex-1"
                   size="lg"
                   variant="secondary"

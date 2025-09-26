@@ -26,9 +26,8 @@ const BusinessCardCreator = () => {
   const [aiPrompt, setAiPrompt] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
 
-  // Check available AI providers
-  const availableProviders = aiApiManager.getAvailableProviders();
-  const hasAnyProvider = availableProviders.length > 0;
+  // Check if Business Card Creator has API key
+  const hasApiKey = aiApiManager.hasKey('business-card');
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
@@ -62,8 +61,8 @@ const BusinessCardCreator = () => {
   };
 
   const generateWithAI = async () => {
-    if (!hasAnyProvider) {
-      alert("No AI API keys found. Please add at least one API key in your environment variables.");
+    if (!hasApiKey) {
+      alert("Business Card Creator API key not found. Please add VITE_GEMINI_BUSINESS_CARD_API_KEY to your environment variables.");
       return;
     }
 
@@ -91,10 +90,7 @@ Please provide a JSON response with the following structure:
 
 Make it realistic and professional. Generate appropriate contact information that fits the business description.`;
 
-      const aiText = await aiApiManager.makeRequest(
-        prompt,
-        ['gemini', 'openai', 'anthropic']
-      );
+      const aiText = await aiApiManager.makeRequest('business-card', prompt);
       
       // Extract JSON from the response
       const jsonMatch = aiText.match(/\{[\s\S]*\}/);
@@ -115,7 +111,7 @@ Make it realistic and professional. Generate appropriate contact information tha
       }
     } catch (error) {
       console.error("Error generating with AI:", error);
-      alert("Error generating business card content with all available providers. Please try again.");
+      alert("Error generating business card content. Please check your API key and try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -324,7 +320,7 @@ Make it realistic and professional. Generate appropriate contact information tha
                   </div>
                   <Button 
                     onClick={generateWithAI} 
-                    disabled={isGenerating || !hasAnyProvider || !aiPrompt}
+                    disabled={isGenerating || !hasApiKey || !aiPrompt}
                     className="w-full"
                   >
                     {isGenerating ? (
@@ -339,9 +335,9 @@ Make it realistic and professional. Generate appropriate contact information tha
                       </>
                     )}
                   </Button>
-                  {!hasAnyProvider && (
+                  {!hasApiKey && (
                     <p className="text-sm text-destructive">
-                      ⚠️ No AI API keys found in environment variables
+                      ⚠️ Business Card Creator API key not found (VITE_GEMINI_BUSINESS_CARD_API_KEY)
                     </p>
                   )}
                 </div>
