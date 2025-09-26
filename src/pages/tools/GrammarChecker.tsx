@@ -2,22 +2,18 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { aiApiManager } from "@/lib/ai-api-manager";
 
 interface Issue {
-  type: "grammar" | "spelling" | "style" | "clarity" | "conciseness" | "passive-voice" | "weasel-words" | "adverbs" | "cliches" | "illusion";
+  type: "grammar" | "spelling" | "style" | "clarity" | "conciseness";
   text: string;
   suggestion: string;
   explanation: string;
   severity: "low" | "medium" | "high";
-  offset?: number;
 }
 
 interface GrammarResponse {
@@ -27,7 +23,6 @@ interface GrammarResponse {
   improvements: string[];
 }
 
-
 const GrammarChecker = () => {
   const [text, setText] = useState("");
   const [correctedText, setCorrectedText] = useState("");
@@ -36,14 +31,9 @@ const GrammarChecker = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [speechSynthesis, setSpeechSynthesis] = useState<SpeechSynthesis | null>(null);
-  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [improvements, setImprovements] = useState<string[]>([]);
   const { toast } = useToast();
-
-  // Check if Grammar Checker has API key
-  const hasApiKey = aiApiManager.hasKey('grammar-checker');
-
 
   // Initialize speech synthesis
   useEffect(() => {
@@ -75,16 +65,13 @@ const GrammarChecker = () => {
       utterance.onend = () => {
         setIsSpeaking(false);
         setIsPaused(false);
-        setCurrentUtterance(null);
       };
       
       utterance.onerror = () => {
         setIsSpeaking(false);
         setIsPaused(false);
-        setCurrentUtterance(null);
       };
 
-      setCurrentUtterance(utterance);
       speechSynthesis.speak(utterance);
     }
   };
@@ -94,7 +81,6 @@ const GrammarChecker = () => {
       speechSynthesis.cancel();
       setIsSpeaking(false);
       setIsPaused(false);
-      setCurrentUtterance(null);
     }
   };
 
@@ -103,15 +89,6 @@ const GrammarChecker = () => {
       toast({
         title: "No text provided",
         description: "Please enter some text to check",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!hasApiKey) {
-      toast({
-        title: "API Key Required",
-        description: "Grammar Checker API key not found. Please add VITE_GEMINI_GRAMMAR_CHECKER_API_KEY to your environment variables.",
         variant: "destructive"
       });
       return;
@@ -179,7 +156,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
       console.error('Grammar check error:', error);
       toast({
         title: "Analysis Failed",
-        description: "Error analyzing text. Please check your API key and try again.",
+        description: "Error analyzing text. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -194,10 +171,6 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
       case 'spelling':
         return <AlertTriangle className="h-4 w-4" />;
       case 'style':
-      case 'passive-voice':
-      case 'weasel-words':
-      case 'adverbs':
-      case 'cliches':
         return <Info className="h-4 w-4" />;
       case 'clarity':
       case 'conciseness':
@@ -210,13 +183,13 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
   const getSeverityColor = (severity: Issue['severity']) => {
     switch (severity) {
       case 'high':
-        return 'text-destructive border-destructive bg-destructive/10';
+        return 'text-red-600 border-red-200 bg-red-50';
       case 'medium':
-        return 'text-warning border-warning bg-warning/10';
+        return 'text-yellow-600 border-yellow-200 bg-yellow-50';
       case 'low':
-        return 'text-info border-info bg-info/10';
+        return 'text-blue-600 border-blue-200 bg-blue-50';
       default:
-        return 'text-muted-foreground border-border bg-muted/10';
+        return 'text-gray-600 border-gray-200 bg-gray-50';
     }
   };
 
@@ -226,40 +199,22 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
       
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-accent/10 text-primary px-6 py-3 rounded-full mb-6 shadow-subtle hover-scale transition-all duration-300 animate-scale-in">
-            <CheckCircle className="h-5 w-5 animate-pulse" />
-            <span className="text-sm font-medium">Grammar Checker</span>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-6 py-3 rounded-full mb-6">
+            <CheckCircle className="h-5 w-5" />
+            <span className="text-sm font-medium">AI Grammar Checker</span>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent mb-6 animate-slide-up">
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent mb-6">
             AI Grammar & Style Checker
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            Check your text for grammar, spelling, and style issues using advanced AI analysis or simple offline checking.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Advanced grammar, spelling, and style analysis powered by Gemini AI technology.
           </p>
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* AI Status Card */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                AI Grammar Checker Status
-              </CardTitle>
-              <CardDescription>
-                Advanced grammar, spelling, and style analysis powered by Gemini AI.{" "}
-                {!hasApiKey ? (
-                  <span className="text-destructive">⚠️ API key not found. Please add VITE_GEMINI_GRAMMAR_CHECKER_API_KEY to your environment variables.</span>
-                ) : (
-                  <span className="text-primary">✓ AI Grammar Checker Ready</span>
-                )}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
           {/* Text Input Area */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
+          <Card className="shadow-lg border-2">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Text to Analyze</span>
@@ -292,7 +247,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                 </div>
               </CardTitle>
               <CardDescription>
-                Enter or paste your text below for analysis
+                Enter or paste your text below for AI-powered analysis
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -310,7 +265,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
               <div className="flex justify-center">
                 <Button
                   onClick={handleCheck}
-                  disabled={!text.trim() || !hasApiKey || isChecking}
+                  disabled={!text.trim() || isChecking}
                   className="w-full max-w-md"
                   size="lg"
                 >
@@ -323,15 +278,15 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
 
           {/* Analysis Results */}
           {(issues.length > 0 || overallScore !== null || correctedText || improvements.length > 0) && (
-            <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
+            <Card className="shadow-lg border-2">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Analysis Results</span>
                   {overallScore !== null && (
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      overallScore >= 80 ? 'bg-success/20 text-success' :
-                      overallScore >= 60 ? 'bg-warning/20 text-warning' :
-                      'bg-destructive/20 text-destructive'
+                      overallScore >= 80 ? 'bg-green-100 text-green-800' :
+                      overallScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
                     }`}>
                       Score: {overallScore}/100
                     </div>
@@ -358,13 +313,14 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                               <p className="text-sm">{issue.explanation}</p>
                               {issue.text && (
                                 <div className="text-sm">
-                                  <strong>Text:</strong> "{issue.text}"
-                                  {issue.suggestion && (
-                                    <>
-                                      <br />
-                                      <strong>Suggestion:</strong> {issue.suggestion}
-                                    </>
-                                  )}
+                                  <span className="font-medium">Found: </span>
+                                  <span className="bg-red-100 px-1 rounded">{issue.text}</span>
+                                </div>
+                              )}
+                              {issue.suggestion && (
+                                <div className="text-sm">
+                                  <span className="font-medium">Suggestion: </span>
+                                  <span className="bg-green-100 px-1 rounded">{issue.suggestion}</span>
                                 </div>
                               )}
                             </div>
@@ -379,23 +335,21 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
                 {correctedText && correctedText !== text && (
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold">Corrected Text</h3>
-                    <Textarea
-                      value={correctedText}
-                      readOnly
-                      className="min-h-32 bg-success/5 border-success/20"
-                    />
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm">{correctedText}</p>
+                    </div>
                   </div>
                 )}
 
-                {/* General Improvements */}
+                {/* Improvements */}
                 {improvements.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold">General Improvements</h3>
+                    <h3 className="text-lg font-semibold">Improvement Suggestions</h3>
                     <ul className="space-y-2">
                       {improvements.map((improvement, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">{improvement}</span>
+                        <li key={index} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          {improvement}
                         </li>
                       ))}
                     </ul>
@@ -406,8 +360,8 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
           )}
 
           {/* Feature Highlights */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <Card className="shadow-subtle border bg-card/30 backdrop-blur-sm hover-scale transition-all duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="shadow-sm border">
               <CardContent className="p-6 text-center space-y-3">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                   <AlertCircle className="h-6 w-6 text-primary" />
@@ -419,7 +373,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
               </CardContent>
             </Card>
 
-            <Card className="shadow-subtle border bg-card/30 backdrop-blur-sm hover-scale transition-all duration-300">
+            <Card className="shadow-sm border">
               <CardContent className="p-6 text-center space-y-3">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                   <Volume2 className="h-6 w-6 text-primary" />
@@ -431,7 +385,7 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
               </CardContent>
             </Card>
 
-            <Card className="shadow-subtle border bg-card/30 backdrop-blur-sm hover-scale transition-all duration-300">
+            <Card className="shadow-sm border">
               <CardContent className="p-6 text-center space-y-3">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                   <CheckCircle className="h-6 w-6 text-primary" />
