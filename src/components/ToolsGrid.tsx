@@ -8,7 +8,9 @@ import {
   CreditCard, 
   CheckCircle, 
   User,
-  Scissors
+  Scissors,
+  Languages,
+  PenTool
 } from "lucide-react";
 
 const toolsData = [
@@ -49,14 +51,14 @@ const toolsData = [
   },
   {
     title: "Business Card Creator",
-    description: "Design professional business cards with customizable templates.",
+    description: "Design professional business cards with AI-powered content generation.",
     icon: CreditCard,
     href: "/tools/business-card-creator",
     color: "primary",
   },
   {
     title: "Grammar & Style Checker",
-    description: "Improve your writing with advanced grammar and style suggestions.",
+    description: "Improve your writing with advanced grammar and style suggestions using AI.",
     icon: CheckCircle,
     href: "/tools/grammar-checker",
     color: "secondary",
@@ -74,6 +76,20 @@ const toolsData = [
     icon: Scissors,
     href: "/tools/image-background-remover",
     color: "success",
+  },
+  {
+    title: "Language Translator",
+    description: "Translate text between 60+ languages with AI-powered accuracy and speech features.",
+    icon: Languages,
+    href: "/tools/language-translator",
+    color: "warning",
+  },
+  {
+    title: "Content Generator",
+    description: "Generate high-quality blogs, emails, and social media posts using AI.",
+    icon: PenTool,
+    href: "/tools/content-generator",
+    color: "primary",
   },
 ];
 
