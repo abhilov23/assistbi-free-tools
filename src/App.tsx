@@ -14,6 +14,8 @@ import BusinessCardCreator from "./pages/tools/BusinessCardCreator";
 import GrammarChecker from "./pages/tools/GrammarChecker";
 import ResumeBuilder from "./pages/tools/ResumeBuilder";
 import ImageBackgroundRemover from "./pages/tools/ImageBackgroundRemover";
+import LanguageTranslator from "./pages/tools/LanguageTranslator";
+import ContentGenerator from "./pages/tools/ContentGenerator";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
           <Route path="/tools/resume-builder" element={<ResumeBuilder />} />
           <Route path="/tools/image-background-remover" element={<ImageBackgroundRemover />} />
+          <Route path="/tools/language-translator" element={<LanguageTranslator />} />
+          <Route path="/tools/content-generator" element={<ContentGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

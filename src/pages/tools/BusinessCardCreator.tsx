@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin } from "lucide-react";
+import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
 import html2canvas from "html2canvas";
 
 const BusinessCardCreator = () => {
@@ -22,6 +22,9 @@ const BusinessCardCreator = () => {
   });
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
@@ -51,6 +54,85 @@ const BusinessCardCreator = () => {
       console.error("Error generating business card:", error);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const generateWithAI = async () => {
+    if (!geminiApiKey.trim()) {
+      alert("Please enter your Gemini API key first");
+      return;
+    }
+
+    if (!aiPrompt.trim()) {
+      alert("Please describe what type of business card you want to create");
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + geminiApiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Create professional business card information based on this description: "${aiPrompt}"
+
+Please provide a JSON response with the following structure:
+{
+  "name": "Professional full name",
+  "title": "Appropriate job title",
+  "company": "Company name",
+  "email": "professional.email@company.com",
+  "phone": "+1 (555) 123-4567",
+  "website": "www.company.com",
+  "address": "Professional address",
+  "linkedin": "linkedin.com/in/profile"
+}
+
+Make it realistic and professional. Generate appropriate contact information that fits the business description.`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 1,
+            topP: 1,
+            maxOutputTokens: 1000,
+          }
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+        let aiText = result.candidates[0].content.parts[0].text;
+        
+        // Extract JSON from the response
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const aiData = JSON.parse(jsonMatch[0]);
+          setCardData({
+            name: aiData.name || "",
+            title: aiData.title || "",
+            company: aiData.company || "",
+            email: aiData.email || "",
+            phone: aiData.phone || "",
+            website: aiData.website || "",
+            address: aiData.address || "",
+            linkedin: aiData.linkedin || "",
+          });
+        } else {
+          throw new Error("Could not parse AI response");
+        }
+      }
+    } catch (error) {
+      console.error("Error generating with AI:", error);
+      alert("Error generating business card content. Please try again.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -236,6 +318,53 @@ const BusinessCardCreator = () => {
                   value={cardData.linkedin}
                   onChange={(e) => handleInputChange("linkedin", e.target.value)}
                 />
+              </div>
+
+              {/* AI Generation Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <Label className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Generate with AI
+                </Label>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="gemini-api">Gemini API Key</Label>
+                    <Input
+                      id="gemini-api"
+                      type="password"
+                      placeholder="Enter your Gemini API key"
+                      value={geminiApiKey}
+                      onChange={(e) => setGeminiApiKey(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-prompt">Describe your business card</Label>
+                    <Textarea
+                      id="ai-prompt"
+                      placeholder="e.g., Marketing manager at a tech startup, creative industry, luxury real estate agent, etc."
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                  <Button 
+                    onClick={generateWithAI} 
+                    disabled={isGenerating || !geminiApiKey || !aiPrompt}
+                    className="w-full"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Generate Business Card
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Template Selection */}
