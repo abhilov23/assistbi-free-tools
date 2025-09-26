@@ -14,9 +14,11 @@ const LanguageTranslator = () => {
   const [translatedText, setTranslatedText] = useState("");
   const [sourceLang, setSourceLang] = useState("auto");
   const [targetLang, setTargetLang] = useState("es");
-  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Get API key from environment variable
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
   const languages = [
     { code: "auto", name: "Auto-detect" },
@@ -92,8 +94,8 @@ const LanguageTranslator = () => {
   ];
 
   const handleTranslate = async () => {
-    if (!geminiApiKey.trim()) {
-      alert("Please enter your Gemini API key first");
+    if (!geminiApiKey) {
+      alert("Gemini API key not found in environment variables");
       return;
     }
 
@@ -199,35 +201,15 @@ const LanguageTranslator = () => {
         </div>
 
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* API Key Input */}
+          {/* Translation Interface */}
           <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Languages className="h-5 w-5 text-primary" />
-                API Configuration
+              <CardTitle className="flex items-center justify-between">
+                <span>Translation</span>
+                {!geminiApiKey && (
+                  <span className="text-sm text-destructive">⚠️ API Key Missing</span>
+                )}
               </CardTitle>
-              <CardDescription>
-                Enter your Gemini API key to enable translation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="gemini-api">Gemini API Key</Label>
-                <Input
-                  id="gemini-api"
-                  type="password"
-                  placeholder="Enter your Gemini API key"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Translation Interface */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <CardHeader>
-              <CardTitle>Translation</CardTitle>
               <CardDescription>
                 Select languages and enter text to translate
               </CardDescription>

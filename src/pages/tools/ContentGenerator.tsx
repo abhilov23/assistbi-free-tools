@@ -11,9 +11,11 @@ import Footer from "@/components/Footer";
 import { PenTool, Copy, Wand2, FileText, Mail, MessageSquare, Lightbulb } from "lucide-react";
 
 const ContentGenerator = () => {
-  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
+
+  // Get API key from environment variable
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   
   // Blog Post States
   const [blogTopic, setBlogTopic] = useState("");
@@ -153,8 +155,8 @@ const ContentGenerator = () => {
   };
 
   const handleGenerate = async (type: string) => {
-    if (!geminiApiKey.trim()) {
-      alert("Please enter your Gemini API key first");
+    if (!geminiApiKey) {
+      alert("Gemini API key not found in environment variables");
       return;
     }
 
@@ -249,37 +251,17 @@ const ContentGenerator = () => {
         </div>
 
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* API Key Input */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wand2 className="h-5 w-5 text-primary" />
-                API Configuration
-              </CardTitle>
-              <CardDescription>
-                Enter your Gemini API key to enable content generation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="gemini-api">Gemini API Key</Label>
-                <Input
-                  id="gemini-api"
-                  type="password"
-                  placeholder="Enter your Gemini API key"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Content Generation Interface */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Input Section */}
-            <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
               <CardHeader>
-                <CardTitle>Content Settings</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Content Settings</span>
+                  {!geminiApiKey && (
+                    <span className="text-sm text-destructive">⚠️ API Key Missing</span>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   Choose content type and customize your requirements
                 </CardDescription>

@@ -42,11 +42,12 @@ const GrammarChecker = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [speechSynthesis, setSpeechSynthesis] = useState<SpeechSynthesis | null>(null);
   const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
   const [overallScore, setOverallScore] = useState<number | null>(null);
   const [improvements, setImprovements] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Get API key from environment variable
+  const apiKey = import.meta.env.VITE_PERPLEXITY_API_KEY;
 
   // Simple offline grammar check using write-good
   const handleSimpleCheck = () => {
@@ -251,10 +252,10 @@ const GrammarChecker = () => {
       return;
     }
 
-    if (!apiKey.trim()) {
+    if (!apiKey) {
       toast({
         title: "API Key Required",
-        description: "Please enter your Perplexity API key to use grammar checking",
+        description: "Perplexity API key not found in environment variables",
         variant: "destructive"
       });
       return;
@@ -462,42 +463,10 @@ Be thorough but concise. Focus on the most important issues first.`
                     AI-Powered Grammar Check
                   </CardTitle>
                   <CardDescription>
-                    Advanced grammar, spelling, and style analysis using Perplexity AI. 
-                    Get your API key from{" "}
-                    <a 
-                      href="https://www.perplexity.ai/settings/api" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Perplexity AI Settings
-                    </a>
+                    Advanced grammar, spelling, and style analysis using Perplexity AI.{" "}
+                    {!apiKey && "API key not found in environment variables."}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="api-key">Perplexity API Key</Label>
-                    <div className="relative">
-                      <Input
-                        id="api-key"
-                        type={showApiKey ? "text" : "password"}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="pplx-..."
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                      >
-                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
               </Card>
             </TabsContent>
           </Tabs>

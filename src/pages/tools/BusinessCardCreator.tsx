@@ -22,9 +22,11 @@ const BusinessCardCreator = () => {
   });
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+
+  // Get API key from environment variable
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
@@ -58,8 +60,8 @@ const BusinessCardCreator = () => {
   };
 
   const generateWithAI = async () => {
-    if (!geminiApiKey.trim()) {
-      alert("Please enter your Gemini API key first");
+    if (!geminiApiKey) {
+      alert("Gemini API key not found in environment variables");
       return;
     }
 
@@ -328,16 +330,6 @@ Make it realistic and professional. Generate appropriate contact information tha
                 </Label>
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <Label htmlFor="gemini-api">Gemini API Key</Label>
-                    <Input
-                      id="gemini-api"
-                      type="password"
-                      placeholder="Enter your Gemini API key"
-                      value={geminiApiKey}
-                      onChange={(e) => setGeminiApiKey(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="ai-prompt">Describe your business card</Label>
                     <Textarea
                       id="ai-prompt"
@@ -364,6 +356,11 @@ Make it realistic and professional. Generate appropriate contact information tha
                       </>
                     )}
                   </Button>
+                  {!geminiApiKey && (
+                    <p className="text-sm text-destructive">
+                      ⚠️ Gemini API key not found in environment variables
+                    </p>
+                  )}
                 </div>
               </div>
 
