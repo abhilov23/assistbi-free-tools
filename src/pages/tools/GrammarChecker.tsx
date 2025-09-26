@@ -9,7 +9,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Key, Eye, EyeOff, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import writeGood from 'write-good';
+import { simpleGrammarCheck, SimpleIssue } from "@/lib/simple-grammar-checker";
 import { aiApiManager } from "@/lib/ai-api-manager";
 
 interface Issue {
@@ -28,11 +28,6 @@ interface GrammarResponse {
   improvements: string[];
 }
 
-interface WriteGoodIssue {
-  index: number;
-  offset: number;
-  reason: string;
-}
 
 const GrammarChecker = () => {
   const [text, setText] = useState("");
@@ -50,7 +45,7 @@ const GrammarChecker = () => {
   // Check if Grammar Checker has API key
   const hasApiKey = aiApiManager.hasKey('grammar-checker');
 
-  // Simple grammar check using write-good library
+  // Simple grammar check using custom checker
   const handleSimpleCheck = () => {
     if (!text.trim()) {
       toast({
@@ -61,8 +56,8 @@ const GrammarChecker = () => {
       return;
     }
 
-    const writeGoodSuggestions: WriteGoodIssue[] = writeGood(text);
-    const convertedIssues: Issue[] = writeGoodSuggestions.map((suggestion, index) => {
+    const simpleSuggestions: SimpleIssue[] = simpleGrammarCheck(text);
+    const convertedIssues: Issue[] = simpleSuggestions.map((suggestion, index) => {
       let type: Issue['type'] = 'style';
       let severity: Issue['severity'] = 'low';
       
