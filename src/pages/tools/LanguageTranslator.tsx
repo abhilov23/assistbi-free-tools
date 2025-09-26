@@ -9,8 +9,10 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Languages, ArrowRightLeft, Copy, Volume2, VolumeX } from "lucide-react";
 import { aiApiManager } from "@/lib/ai-api-manager";
+import { useToast } from "@/hooks/use-toast";
 
 const LanguageTranslator = () => {
+  const { toast } = useToast();
   const [inputText, setInputText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [sourceLang, setSourceLang] = useState("auto");
@@ -96,12 +98,20 @@ const LanguageTranslator = () => {
 
   const handleTranslate = async () => {
     if (!hasApiKey) {
-      alert("Language Translator API key not found. Please add VITE_GEMINI_TRANSLATOR_API_KEY to your environment variables.");
+      toast({
+        title: "API Key Missing",
+        description: "Language Translator API key not found. Please add your Gemini API key.",
+        variant: "destructive"
+      });
       return;
     }
 
     if (!inputText.trim()) {
-      alert("Please enter text to translate");
+      toast({
+        title: "No Text Provided",
+        description: "Please enter text to translate",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -118,9 +128,18 @@ const LanguageTranslator = () => {
       const translation = await aiApiManager.makeRequest('translator', prompt);
       
       setTranslatedText(translation.trim());
+      toast({
+        title: "Translation Complete",
+        description: `Successfully translated from ${sourceLangName} to ${targetLangName}`
+      });
     } catch (error) {
       console.error("Translation error:", error);
-      alert("Error translating text. Please check your API key and try again.");
+      toast({
+        title: "Translation Failed",
+        description: error instanceof Error ? error.message : "Error translating text. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
     } finally {
       setIsTranslating(false);
     }
@@ -137,7 +156,10 @@ const LanguageTranslator = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // You could add a toast notification here
+    toast({
+      title: "Copied!",
+      description: "Text copied to clipboard"
+    });
   };
 
   const handleTextToSpeech = (text: string, lang: string) => {
