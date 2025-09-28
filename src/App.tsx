@@ -19,6 +19,7 @@ import ResumeBuilder from "./pages/tools/ResumeBuilder";
 import ImageBackgroundRemover from "./pages/tools/ImageBackgroundRemover";
 import LanguageTranslator from "./pages/tools/LanguageTranslator";
 import ContentGenerator from "./pages/tools/ContentGenerator";
+import PasswordGenerator from "./pages/tools/PasswordGenerator";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/tools/image-background-remover" element={<ImageBackgroundRemover />} />
           <Route path="/tools/language-translator" element={<LanguageTranslator />} />
           <Route path="/tools/content-generator" element={<ContentGenerator />} />
+          <Route path="/tools/password-generator" element={<PasswordGenerator />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

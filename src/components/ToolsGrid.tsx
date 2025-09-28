@@ -10,7 +10,8 @@ import {
   User,
   Scissors,
   Languages,
-  PenTool
+  PenTool,
+  Shield
 } from "lucide-react";
 
 const toolsData = [
@@ -90,6 +91,13 @@ const toolsData = [
     icon: PenTool,
     href: "/tools/content-generator",
     color: "primary",
+  },
+  {
+    title: "Password Generator",
+    description: "Generate secure, random passwords to protect your accounts and data.",
+    icon: Shield,
+    href: "/tools/password-generator",
+    color: "secondary",
   },
 ];
 
