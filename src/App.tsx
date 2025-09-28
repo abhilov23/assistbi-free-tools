@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import AllTools from "./pages/AllTools";
@@ -24,34 +25,36 @@ import PasswordGenerator from "./pages/tools/PasswordGenerator";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/tools" element={<AllTools />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/tools/pdf-converter" element={<PDFConverter />} />
-          <Route path="/tools/qr-generator" element={<QRGenerator />} />
-          <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
-          <Route path="/tools/pdf-exporter" element={<PDFExporter />} />
-          <Route path="/tools/url-shortener" element={<URLShortener />} />
-          <Route path="/tools/business-card-creator" element={<BusinessCardCreator />} />
-          <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
-          <Route path="/tools/resume-builder" element={<ResumeBuilder />} />
-          <Route path="/tools/image-background-remover" element={<ImageBackgroundRemover />} />
-          <Route path="/tools/language-translator" element={<LanguageTranslator />} />
-          <Route path="/tools/content-generator" element={<ContentGenerator />} />
-          <Route path="/tools/password-generator" element={<PasswordGenerator />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/tools" element={<AllTools />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/tools/pdf-converter" element={<PDFConverter />} />
+            <Route path="/tools/qr-generator" element={<QRGenerator />} />
+            <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
+            <Route path="/tools/pdf-exporter" element={<PDFExporter />} />
+            <Route path="/tools/url-shortener" element={<URLShortener />} />
+            <Route path="/tools/business-card-creator" element={<BusinessCardCreator />} />
+            <Route path="/tools/grammar-checker" element={<GrammarChecker />} />
+            <Route path="/tools/resume-builder" element={<ResumeBuilder />} />
+            <Route path="/tools/image-background-remover" element={<ImageBackgroundRemover />} />
+            <Route path="/tools/language-translator" element={<LanguageTranslator />} />
+            <Route path="/tools/content-generator" element={<ContentGenerator />} />
+            <Route path="/tools/password-generator" element={<PasswordGenerator />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

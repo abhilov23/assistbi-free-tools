@@ -59,7 +59,9 @@ const Navigation = () => {
           <button
             className="md:hidden p-2 rounded-lg hover:bg-muted transition-smooth"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {isMenuOpen ? (
               <X className="h-6 w-6" />
@@ -71,7 +73,12 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <div
+            id="mobile-navigation" 
+            className="md:hidden py-4 border-t border-border animate-fade-in"
+            role="navigation"
+            aria-label="Mobile navigation"
+          >
             <div className="flex flex-col space-y-4">
               <Link
                 to="/"

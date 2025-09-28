@@ -1,0 +1,29 @@
+Contact: mailto:security@assistbi.com
+Expires: 2025-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://assistbi-tools.lovable.app/.well-known/security.txt
+Policy: https://assistbi-tools.lovable.app/security-policy
+Acknowledgments: https://assistbi-tools.lovable.app/security-acknowledgments
+
+# Security Policy
+We take security seriously. If you find a security vulnerability, please report it responsibly.
+
+# Reporting Guidelines
+- Email security@assistbi.com with details
+- Include proof of concept if possible
+- Allow reasonable time for response
+- Do not disclose publicly until we've had time to address
+
+# Scope
+- This application and its subdomains
+- Client-side vulnerabilities
+- Authentication and authorization issues
+- Data exposure vulnerabilities
+
+# Out of Scope
+- Social engineering attacks
+- Physical attacks
+- Denial of service attacks
+- Spam or abuse of contact forms
+
+Thank you for helping keep AssistBi Tools secure!

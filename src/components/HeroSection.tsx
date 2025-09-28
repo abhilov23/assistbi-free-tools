@@ -54,7 +54,7 @@ const HeroSection = () => {
           {/* Stats */}
           <div className="flex flex-wrap justify-center items-center gap-8 mt-16 text-muted-foreground animate-fade-in animate-stagger-3">
             <div className="text-center">
-              <div className="text-2xl font-bold text-foreground">8+</div>
+              <div className="text-2xl font-bold text-foreground">12+</div>
               <div className="text-sm">Free Tools</div>
             </div>
             <div className="text-center">

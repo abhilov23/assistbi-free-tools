@@ -9,9 +9,13 @@ const Footer = () => {
     { name: "Invoice Generator", href: "/tools/invoice-generator" },
     { name: "QR Generator", href: "/tools/qr-generator" },
     { name: "URL Shortener", href: "/tools/url-shortener" },
-    { name: "Document Summarizer", href: "/tools/document-summarizer" },
+    { name: "Business Card Creator", href: "/tools/business-card-creator" },
     { name: "Grammar Checker", href: "/tools/grammar-checker" },
-    { name: "Invoice OCR", href: "/tools/invoice-ocr" },
+    { name: "Resume Builder", href: "/tools/resume-builder" },
+    { name: "Language Translator", href: "/tools/language-translator" },
+    { name: "Content Generator", href: "/tools/content-generator" },
+    { name: "Password Generator", href: "/tools/password-generator" },
+    { name: "Background Remover", href: "/tools/image-background-remover" },
   ];
 
   return (
@@ -61,7 +65,7 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold text-foreground mb-4">More Tools</h3>
             <ul className="space-y-3">
-              {toolLinks.slice(4, 8).map((tool) => (
+              {toolLinks.slice(4, 12).map((tool) => (
                 <li key={tool.name}>
                   <Link
                     to={tool.href}
@@ -96,19 +100,19 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/privacy"
+                  to="/tools"
                   className="text-muted-foreground hover:text-primary transition-smooth"
                 >
-                  Privacy Policy
+                  All Tools
                 </Link>
               </li>
               <li>
-                <Link
-                  to="/terms"
+                <a
+                  href="mailto:support@assistbi.com"
                   className="text-muted-foreground hover:text-primary transition-smooth"
                 >
-                  Terms of Service
-                </Link>
+                  Contact Us
+                </a>
               </li>
             </ul>
           </div>
