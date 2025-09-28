@@ -35,7 +35,10 @@ const Support = () => {
     try {
       const validatedData = contactSchema.parse(formData);
       
-      // Simulate form submission
+      // TODO: Replace with actual form submission
+      // Option 1: Use Lovable Cloud database to store messages
+      // Option 2: Use external email service API
+      // Option 3: Use EmailJS for client-side email sending
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
