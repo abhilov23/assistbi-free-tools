@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import AllTools from "./pages/AllTools";
+import Support from "./pages/Support";
+import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import PDFConverter from "./pages/tools/PDFConverter";
 import QRGenerator from "./pages/tools/QRGenerator";
@@ -27,6 +30,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/tools" element={<AllTools />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/about" element={<About />} />
           <Route path="/tools/pdf-converter" element={<PDFConverter />} />
           <Route path="/tools/qr-generator" element={<QRGenerator />} />
           <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />

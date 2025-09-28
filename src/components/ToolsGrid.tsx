@@ -93,7 +93,12 @@ const toolsData = [
   },
 ];
 
-const ToolsGrid = () => {
+const ToolsGrid = ({ searchFilter = "" }: { searchFilter?: string }) => {
+  const filteredTools = toolsData.filter(tool =>
+    tool.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
+    tool.description.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
   return (
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -109,7 +114,8 @@ const ToolsGrid = () => {
 
         {/* Tools Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {toolsData.map((tool, index) => (
+          {filteredTools.length > 0 ? (
+            filteredTools.map((tool, index) => (
             <ToolCard
               key={tool.title}
               title={tool.title}
@@ -119,7 +125,17 @@ const ToolsGrid = () => {
               color={tool.color}
               delay={index * 100}
             />
-          ))}
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground text-lg">
+                No tools found matching "{searchFilter}"
+              </p>
+              <p className="text-muted-foreground text-sm mt-2">
+                Try adjusting your search or browse all available tools.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* View All Button */}
