@@ -519,12 +519,14 @@ Make it realistic and professional. Generate appropriate contact information tha
                             fontSize: '12px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <Mail style={{ 
+                            <span style={{ 
                               width: '14px', 
                               height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0 
-                            }} />
+                              flexShrink: 0,
+                              fontSize: '14px',
+                              display: 'inline-block'
+                            }}>✉</span>
                             <span style={{ lineHeight: '1.2' }}>{cardData.email}</span>
                           </div>
                         )}
@@ -536,12 +538,14 @@ Make it realistic and professional. Generate appropriate contact information tha
                             fontSize: '12px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <Phone style={{ 
+                            <span style={{ 
                               width: '14px', 
                               height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0 
-                            }} />
+                              flexShrink: 0,
+                              fontSize: '14px',
+                              display: 'inline-block'
+                            }}>☎</span>
                             <span style={{ lineHeight: '1.2' }}>{cardData.phone}</span>
                           </div>
                         )}
@@ -553,12 +557,14 @@ Make it realistic and professional. Generate appropriate contact information tha
                             fontSize: '12px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <Globe style={{ 
+                            <span style={{ 
                               width: '14px', 
                               height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0 
-                            }} />
+                              flexShrink: 0,
+                              fontSize: '14px',
+                              display: 'inline-block'
+                            }}>🌐</span>
                             <span style={{ lineHeight: '1.2' }}>{cardData.website}</span>
                           </div>
                         )}
@@ -570,12 +576,14 @@ Make it realistic and professional. Generate appropriate contact information tha
                             fontSize: '12px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <Linkedin style={{ 
+                            <span style={{ 
                               width: '14px', 
                               height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0 
-                            }} />
+                              flexShrink: 0,
+                              fontSize: '14px',
+                              display: 'inline-block'
+                            }}>💼</span>
                             <span style={{ lineHeight: '1.2' }}>{cardData.linkedin}</span>
                           </div>
                         )}
