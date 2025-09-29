@@ -512,64 +512,68 @@ Make it realistic and professional. Generate appropriate contact information tha
                         right: '24px'
                       }}>
                         {cardData.email && (
-                          <div style={{
+                          <table style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                            lineHeight: '16px'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <span style={{ 
-                              marginRight: '8px',
-                              fontSize: '14px',
-                              verticalAlign: 'middle'
-                            }}>✉</span>
-                            <span style={{ verticalAlign: 'middle' }}>{cardData.email}</span>
-                          </div>
+                            <tbody>
+                              <tr>
+                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px' }}>✉</td>
+                                <td>{cardData.email}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         )}
                         {cardData.phone && (
-                          <div style={{
+                          <table style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                            lineHeight: '16px'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <span style={{ 
-                              marginRight: '8px',
-                              fontSize: '14px',
-                              verticalAlign: 'middle'
-                            }}>☎</span>
-                            <span style={{ verticalAlign: 'middle' }}>{cardData.phone}</span>
-                          </div>
+                            <tbody>
+                              <tr>
+                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px' }}>☎</td>
+                                <td>{cardData.phone}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         )}
                         {cardData.website && (
-                          <div style={{
+                          <table style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                            lineHeight: '16px'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <span style={{ 
-                              marginRight: '8px',
-                              fontSize: '14px',
-                              verticalAlign: 'middle'
-                            }}>🌐</span>
-                            <span style={{ verticalAlign: 'middle' }}>{cardData.website}</span>
-                          </div>
+                            <tbody>
+                              <tr>
+                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px' }}>🌐</td>
+                                <td>{cardData.website}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         )}
                         {cardData.linkedin && (
-                          <div style={{
+                          <table style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
                             marginBottom: '0',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                            lineHeight: '16px'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>
-                            <span style={{ 
-                              marginRight: '8px',
-                              fontSize: '14px',
-                              verticalAlign: 'middle'
-                            }}>💼</span>
-                            <span style={{ verticalAlign: 'middle' }}>{cardData.linkedin}</span>
-                          </div>
+                            <tbody>
+                              <tr>
+                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px' }}>💼</td>
+                                <td>{cardData.linkedin}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         )}
                       </div>
                     </div>
