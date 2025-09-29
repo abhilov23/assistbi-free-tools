@@ -8,7 +8,6 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
 import html2canvas from "html2canvas";
-import { aiApiManager } from "@/lib/ai-api-manager";
 import { useToast } from "@/hooks/use-toast";
 
 const BusinessCardCreator = () => {
@@ -27,10 +26,10 @@ const BusinessCardCreator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
-
-  // Check if Business Card Creator has API key
-  const hasApiKey = aiApiManager.hasKey('business-card');
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  const apiKey = import.meta.env.VITE_GEMINI_BUSINESS_CARD_API_KEY;
+  const hasApiKey = !!apiKey;
 
   const handleInputChange = (field: string, value: string) => {
     setCardData(prev => ({
@@ -76,12 +75,20 @@ const BusinessCardCreator = () => {
 
   const generateWithAI = async () => {
     if (!hasApiKey) {
-      alert("Business Card Creator API key not found. Please add VITE_GEMINI_BUSINESS_CARD_API_KEY to your environment variables.");
+      toast({
+        title: "API Key Missing",
+        description: "Please add VITE_GEMINI_BUSINESS_CARD_API_KEY to your .env file",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!aiPrompt.trim()) {
-      alert("Please describe what type of business card you want to create");
+      toast({
+        title: "Prompt Required",
+        description: "Please describe what type of business card you want to create",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -90,7 +97,7 @@ const BusinessCardCreator = () => {
     try {
       const prompt = `Create professional business card information based on this description: "${aiPrompt}"
 
-Please provide a JSON response with the following structure:
+Please provide ONLY a JSON response with the following structure (no other text):
 {
   "name": "Professional full name",
   "title": "Appropriate job title",
@@ -104,7 +111,33 @@ Please provide a JSON response with the following structure:
 
 Make it realistic and professional. Generate appropriate contact information that fits the business description.`;
 
-      const aiText = await aiApiManager.makeRequest('business-card', prompt);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
+            }
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!aiText) {
+        throw new Error("No content generated");
+      }
       
       // Extract JSON from the response
       const jsonMatch = aiText.match(/\{[\s\S]*\}/);
@@ -119,6 +152,11 @@ Make it realistic and professional. Generate appropriate contact information tha
           website: aiData.website || "",
           address: aiData.address || "",
           linkedin: aiData.linkedin || "",
+        });
+        
+        toast({
+          title: "Success!",
+          description: "Business card generated successfully",
         });
       } else {
         throw new Error("Could not parse AI response");
