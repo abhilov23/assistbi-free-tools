@@ -45,18 +45,30 @@ const BusinessCardCreator = () => {
     setIsDownloading(true);
     try {
       const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        backgroundColor: null,
+        scale: 3,
+        backgroundColor: '#ffffff',
         width: 400,
         height: 240,
+        logging: false,
+        useCORS: true,
       });
       
       const link = document.createElement('a');
-      link.download = `business-card-${cardData.name.replace(/\s+/g, '-').toLowerCase()}.png`;
-      link.href = canvas.toDataURL();
+      link.download = `business-card-${cardData.name.replace(/\s+/g, '-').toLowerCase() || 'card'}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
+      
+      toast({
+        title: "Success!",
+        description: "Business card downloaded successfully",
+      });
     } catch (error) {
       console.error("Error generating business card:", error);
+      toast({
+        title: "Download Failed",
+        description: "Error generating business card. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsDownloading(false);
     }
@@ -131,63 +143,71 @@ Make it realistic and professional. Generate appropriate contact information tha
       color: "bg-gradient-to-br from-primary via-primary-glow to-accent",
       textColor: "text-white",
       pattern: "geometric",
-      glow: "shadow-elegant"
+      glow: "shadow-elegant",
+      inlineStyle: "background: linear-gradient(135deg, #4F9FF8 0%, #6BBBFF 50%, #FFB84D 100%)"
     },
     { 
       id: "classic", 
       name: "Classic", 
-      color: "bg-gradient-to-br from-card via-muted to-card-foreground",
-      textColor: "text-card-foreground",
+      color: "bg-gradient-to-br from-slate-800 via-slate-600 to-slate-900",
+      textColor: "text-white",
       pattern: "elegant",
-      glow: "shadow-subtle"
+      glow: "shadow-subtle",
+      inlineStyle: "background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #0f172a 100%)"
     },
     { 
       id: "creative", 
       name: "Creative", 
-      color: "bg-gradient-to-br from-destructive via-primary to-accent",
+      color: "bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500",
       textColor: "text-white",
       pattern: "artistic",
-      glow: "shadow-glow"
+      glow: "shadow-glow",
+      inlineStyle: "background: linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #f97316 100%)"
     },
     { 
       id: "minimal", 
       name: "Minimal", 
-      color: "bg-gradient-to-br from-background to-muted border-2 border-border",
-      textColor: "text-foreground",
+      color: "bg-white border-2 border-gray-200",
+      textColor: "text-gray-900",
       pattern: "clean",
-      glow: "shadow-sm"
+      glow: "shadow-sm",
+      inlineStyle: "background: #ffffff; border: 2px solid #e5e7eb"
     },
     { 
       id: "neon", 
       name: "Neon", 
-      color: "bg-gradient-to-br from-accent via-primary to-primary-glow",
+      color: "bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600",
       textColor: "text-white",
       pattern: "futuristic",
-      glow: "shadow-glow animate-pulse"
+      glow: "shadow-glow animate-pulse",
+      inlineStyle: "background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #9333ea 100%)"
     },
     { 
       id: "luxury", 
       name: "Luxury", 
-      color: "bg-gradient-to-br from-warning via-warning-foreground to-warning",
+      color: "bg-gradient-to-br from-amber-600 via-yellow-600 to-amber-700",
       textColor: "text-white",
       pattern: "premium",
-      glow: "shadow-elegant"
+      glow: "shadow-elegant",
+      inlineStyle: "background: linear-gradient(135deg, #d97706 0%, #ca8a04 50%, #b45309 100%)"
     },
     { 
       id: "holographic", 
       name: "Holographic", 
-      color: "bg-gradient-to-br from-primary/80 via-accent/90 to-primary-glow/80 backdrop-blur-sm",
+      color: "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500",
       textColor: "text-white",
       pattern: "hologram",
-      glow: "shadow-glow animate-pulse"
+      glow: "shadow-glow animate-pulse",
+      inlineStyle: "background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)"
     },
     { 
       id: "glass", 
       name: "Glass", 
-      color: "bg-white/10 backdrop-blur-md border border-white/20",
-      textColor: "text-foreground",
+      color: "bg-gradient-to-br from-blue-400/90 via-cyan-400/90 to-teal-400/90",
+      textColor: "text-white",
       pattern: "glass",
-      glow: "shadow-large"
+      glow: "shadow-large",
+      inlineStyle: "background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 50%, #2dd4bf 100%)"
     }
   ];
 
@@ -429,6 +449,12 @@ Make it realistic and professional. Generate appropriate contact information tha
                       } ${
                         templates.find(t => t.id === selectedTemplate)?.glow
                       } relative overflow-hidden transform hover:scale-105 transition-all duration-500 animate-scale-in`}
+                      style={{
+                        ...(templates.find(t => t.id === selectedTemplate)?.inlineStyle ? 
+                          { background: templates.find(t => t.id === selectedTemplate)?.inlineStyle?.replace('background: ', '') } : 
+                          {}
+                        )
+                      }}
                     >
                       {/* Background Patterns */}
                       {selectedTemplate === 'modern' && (
@@ -479,34 +505,50 @@ Make it realistic and professional. Generate appropriate contact information tha
                         </div>
                       )}
 
-                      <div className="relative z-10 h-full flex flex-col justify-between">
+                      <div className="relative z-10 h-full flex flex-col justify-between" style={{
+                        color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
+                      }}>
                         <div>
-                          <h3 className="text-xl font-bold mb-1 leading-tight">{cardData.name}</h3>
-                          <p className="text-sm opacity-90 mb-2">{cardData.title}</p>
-                          <p className="text-lg font-semibold">{cardData.company}</p>
+                          <h3 className="text-xl font-bold mb-1 leading-tight" style={{
+                            color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
+                          }}>{cardData.name}</h3>
+                          <p className="text-sm opacity-90 mb-2" style={{
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                          }}>{cardData.title}</p>
+                          <p className="text-lg font-semibold" style={{
+                            color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
+                          }}>{cardData.company}</p>
                         </div>
                         
                         <div className="space-y-1">
                           {cardData.email && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs" style={{
+                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            }}>
                               <Mail className="h-3 w-3" />
                               <span>{cardData.email}</span>
                             </div>
                           )}
                           {cardData.phone && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs" style={{
+                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            }}>
                               <Phone className="h-3 w-3" />
                               <span>{cardData.phone}</span>
                             </div>
                           )}
                           {cardData.website && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs" style={{
+                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            }}>
                               <Globe className="h-3 w-3" />
                               <span>{cardData.website}</span>
                             </div>
                           )}
                           {cardData.linkedin && (
-                            <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-2 text-xs" style={{
+                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            }}>
                               <Linkedin className="h-3 w-3" />
                               <span>{cardData.linkedin}</span>
                             </div>
