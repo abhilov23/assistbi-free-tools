@@ -381,42 +381,23 @@ Make it realistic and professional. Generate appropriate contact information tha
                     <button
                       key={template.id}
                       onClick={() => setSelectedTemplate(template.id)}
-                      className={`group p-3 rounded-xl border-2 transition-all duration-300 hover-scale animate-fade-in ${
+                      className={`group p-3 border-2 transition-all duration-300 animate-fade-in ${
                         selectedTemplate === template.id
-                          ? "border-primary ring-2 ring-primary/20 shadow-glow"
-                          : "border-border hover:border-primary/50 hover:shadow-subtle"
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-primary/50"
                       }`}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className={`w-full h-10 rounded-lg ${template.color} ${template.glow} mb-2 relative overflow-hidden group-hover:scale-105 transition-transform duration-300`}>
-                        {/* Enhanced pattern overlays */}
-                        {template.pattern === 'geometric' && (
-                          <div className="absolute inset-0 opacity-20">
-                            <div className="absolute top-0 right-0 w-4 h-4 bg-white transform rotate-45 animate-pulse" />
-                            <div className="absolute bottom-0 left-0 w-3 h-3 bg-white rounded-full animate-bounce" />
-                          </div>
-                        )}
-                        {template.pattern === 'artistic' && (
-                          <div className="absolute inset-0 opacity-30">
-                            <div className="absolute top-1 left-1 w-2 h-2 bg-white rounded-full animate-ping" />
-                            <div className="absolute bottom-1 right-1 w-1 h-1 bg-white animate-pulse" />
-                            <div className="absolute top-1/2 left-1/2 w-1 h-4 bg-white/40 transform -translate-x-1/2 -translate-y-1/2 rotate-12" />
-                          </div>
-                        )}
-                        {template.pattern === 'hologram' && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-                        )}
-                        {template.pattern === 'glass' && (
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-white/10" />
-                        )}
-                        {template.pattern === 'futuristic' && (
-                          <div className="absolute inset-0 opacity-40">
-                            <div className="absolute top-0 left-0 w-full h-0.5 bg-white animate-pulse" />
-                            <div className="absolute bottom-0 right-0 w-0.5 h-full bg-white animate-pulse" />
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs font-medium group-hover:text-primary transition-colors">{template.name}</span>
+                      <div 
+                        className="w-full h-10 mb-2 relative overflow-hidden"
+                        style={{
+                          ...(template.inlineStyle ? 
+                            { background: template.inlineStyle.replace('background: ', '') } : 
+                            {}
+                          )
+                        }}
+                      />
+                      <span className="text-xs font-medium">{template.name}</span>
                     </button>
                   ))}
                 </div>
@@ -439,16 +420,10 @@ Make it realistic and professional. Generate appropriate contact information tha
               {cardData.name && cardData.title && cardData.company ? (
                 <div className="space-y-6">
                   {/* Business Card Preview */}
-                  <div className="bg-gradient-to-br from-muted/30 to-muted/60 p-8 rounded-xl backdrop-blur-sm">
+                  <div className="bg-gray-100 p-8">
                     <div 
                       ref={cardRef}
-                      className={`w-full h-48 rounded-xl p-6 ${
-                        templates.find(t => t.id === selectedTemplate)?.color
-                      } ${
-                        templates.find(t => t.id === selectedTemplate)?.textColor
-                      } ${
-                        templates.find(t => t.id === selectedTemplate)?.glow
-                      } relative overflow-hidden transform hover:scale-105 transition-all duration-500 animate-scale-in`}
+                      className="w-full h-48 p-6 relative overflow-hidden"
                       style={{
                         ...(templates.find(t => t.id === selectedTemplate)?.inlineStyle ? 
                           { background: templates.find(t => t.id === selectedTemplate)?.inlineStyle?.replace('background: ', '') } : 
@@ -456,55 +431,6 @@ Make it realistic and professional. Generate appropriate contact information tha
                         )
                       }}
                     >
-                      {/* Background Patterns */}
-                      {selectedTemplate === 'modern' && (
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-4 right-4 w-8 h-8 border-2 border-white transform rotate-45" />
-                          <div className="absolute bottom-4 left-4 w-6 h-6 bg-white rounded-full opacity-30" />
-                          <div className="absolute top-1/2 right-8 w-1 h-12 bg-white opacity-40 transform -rotate-12" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'classic' && (
-                        <div className="absolute inset-0 opacity-10">
-                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent" />
-                          <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'creative' && (
-                        <div className="absolute inset-0 opacity-25">
-                          <div className="absolute top-2 right-2 w-4 h-4 bg-white rounded-full" />
-                          <div className="absolute top-8 right-8 w-2 h-2 bg-white" />
-                          <div className="absolute bottom-6 right-6 w-3 h-3 bg-white transform rotate-45" />
-                          <div className="absolute bottom-2 left-2 w-6 h-1 bg-white opacity-60" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'neon' && (
-                        <div className="absolute inset-0 opacity-30">
-                          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cyan-400/20 to-transparent" />
-                          <div className="absolute top-4 right-4 w-1 h-8 bg-white opacity-60 animate-pulse" />
-                          <div className="absolute bottom-4 left-4 w-8 h-1 bg-white opacity-60 animate-pulse" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'luxury' && (
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="absolute top-2 left-2 w-8 h-8 border border-white opacity-40 animate-pulse" />
-                          <div className="absolute bottom-2 right-2 w-6 h-6 border border-white opacity-40 transform rotate-45 animate-pulse" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'holographic' && (
-                        <div className="absolute inset-0">
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-                          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-pulse" />
-                        </div>
-                      )}
-                      {selectedTemplate === 'glass' && (
-                        <div className="absolute inset-0">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/10" />
-                          <div className="absolute top-2 right-2 w-4 h-4 bg-white/30 rounded-full blur-sm" />
-                          <div className="absolute bottom-4 left-4 w-2 h-8 bg-white/20 blur-sm" />
-                        </div>
-                      )}
-
                       <div className="relative z-10 h-full flex flex-col justify-between" style={{
                         color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
                       }}>
@@ -555,9 +481,6 @@ Make it realistic and professional. Generate appropriate contact information tha
                           )}
                         </div>
                       </div>
-                      
-                      {/* Subtle overlay for depth */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/5 to-black/20" />
                     </div>
                   </div>
 
