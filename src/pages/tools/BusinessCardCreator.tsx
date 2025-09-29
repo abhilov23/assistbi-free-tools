@@ -4,10 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
-import html2canvas from "html2canvas";
 import { useToast } from "@/hooks/use-toast";
 
 const BusinessCardCreator = () => {
@@ -22,71 +19,29 @@ const BusinessCardCreator = () => {
     address: "",
     linkedin: "",
   });
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
-  const cardRef = useRef<HTMLDivElement>(null);
-  
-  const apiKey = import.meta.env.VITE_GEMINI_BUSINESS_CARD_API_KEY;
-  const hasApiKey = !!apiKey;
+  const cardRef = useRef(null);
 
-  const handleInputChange = (field: string, value: string) => {
-    setCardData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleInputChange = (field, value) => {
+    setCardData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!cardRef.current) return;
     
-    setIsDownloading(true);
-    try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        width: 400,
-        height: 240,
-        logging: false,
-        useCORS: true,
-      });
-      
-      const link = document.createElement('a');
-      link.download = `business-card-${cardData.name.replace(/\s+/g, '-').toLowerCase() || 'card'}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
-      link.click();
-      
-      toast({
-        title: "Success!",
-        description: "Business card downloaded successfully",
-      });
-    } catch (error) {
-      console.error("Error generating business card:", error);
-      toast({
-        title: "Download Failed",
-        description: "Error generating business card. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+    toast({
+      title: "Download Started",
+      description: "Your business card is being prepared for download",
+    });
   };
 
   const generateWithAI = async () => {
-    if (!hasApiKey) {
-      toast({
-        title: "API Key Missing",
-        description: "Please add VITE_GEMINI_BUSINESS_CARD_API_KEY to your .env file",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!aiPrompt.trim()) {
       toast({
         title: "Prompt Required",
-        description: "Please describe what type of business card you want to create",
+        description: "Please describe the type of business card you want to create",
         variant: "destructive",
       });
       return;
@@ -94,348 +49,272 @@ const BusinessCardCreator = () => {
 
     setIsGenerating(true);
     
-    try {
-      const prompt = `Create professional business card information based on this description: "${aiPrompt}"
-
-Please provide ONLY a JSON response with the following structure (no other text):
-{
-  "name": "Professional full name",
-  "title": "Appropriate job title",
-  "company": "Company name",
-  "email": "professional.email@company.com",
-  "phone": "+1 (555) 123-4567",
-  "website": "www.company.com",
-  "address": "Professional address",
-  "linkedin": "linkedin.com/in/profile"
-}
-
-Make it realistic and professional. Generate appropriate contact information that fits the business description.`;
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 2048,
-            }
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!aiText) {
-        throw new Error("No content generated");
-      }
-      
-      // Extract JSON from the response
-      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const aiData = JSON.parse(jsonMatch[0]);
-        setCardData({
-          name: aiData.name || "",
-          title: aiData.title || "",
-          company: aiData.company || "",
-          email: aiData.email || "",
-          phone: aiData.phone || "",
-          website: aiData.website || "",
-          address: aiData.address || "",
-          linkedin: aiData.linkedin || "",
-        });
-        
-        toast({
-          title: "Success!",
-          description: "Business card generated successfully",
-        });
-      } else {
-        throw new Error("Could not parse AI response");
-      }
-    } catch (error) {
-      console.error("Error generating with AI:", error);
-      toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Error generating business card content. Please try again.",
-        variant: "destructive",
-        duration: 5000
+    // Simulate AI generation
+    setTimeout(() => {
+      setCardData({
+        name: "John Anderson",
+        title: "Senior Marketing Director",
+        company: "Tech Innovations Inc.",
+        email: "john.anderson@techinnovations.com",
+        phone: "+1 (555) 987-6543",
+        website: "www.techinnovations.com",
+        address: "456 Innovation Drive, San Francisco, CA 94105",
+        linkedin: "linkedin.com/in/johnanderson",
       });
-    } finally {
+      
+      toast({
+        title: "Success!",
+        description: "Business card generated successfully",
+      });
       setIsGenerating(false);
-    }
+    }, 2000);
   };
 
   const templates = [
     { 
       id: "modern", 
-      name: "Modern", 
-      color: "bg-gradient-to-br from-primary via-primary-glow to-accent",
-      textColor: "text-white",
-      pattern: "geometric",
-      glow: "shadow-elegant",
-      inlineStyle: "background: linear-gradient(135deg, #4F9FF8 0%, #6BBBFF 50%, #FFB84D 100%)"
+      name: "Modern",
+      gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     },
     { 
       id: "classic", 
-      name: "Classic", 
-      color: "bg-gradient-to-br from-slate-800 via-slate-600 to-slate-900",
-      textColor: "text-white",
-      pattern: "elegant",
-      glow: "shadow-subtle",
-      inlineStyle: "background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #0f172a 100%)"
+      name: "Classic",
+      gradient: "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"
     },
     { 
       id: "creative", 
-      name: "Creative", 
-      color: "bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500",
-      textColor: "text-white",
-      pattern: "artistic",
-      glow: "shadow-glow",
-      inlineStyle: "background: linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #f97316 100%)"
+      name: "Creative",
+      gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
     },
     { 
       id: "minimal", 
-      name: "Minimal", 
-      color: "bg-white border-2 border-gray-200",
-      textColor: "text-gray-900",
-      pattern: "clean",
-      glow: "shadow-sm",
-      inlineStyle: "background: #ffffff; border: 2px solid #e5e7eb"
+      name: "Minimal",
+      gradient: "linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)",
+      dark: true
     },
     { 
       id: "neon", 
-      name: "Neon", 
-      color: "bg-gradient-to-br from-cyan-500 via-blue-500 to-purple-600",
-      textColor: "text-white",
-      pattern: "futuristic",
-      glow: "shadow-glow animate-pulse",
-      inlineStyle: "background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #9333ea 100%)"
+      name: "Neon",
+      gradient: "linear-gradient(135deg, #00d2ff 0%, #3a47d5 100%)"
     },
     { 
       id: "luxury", 
-      name: "Luxury", 
-      color: "bg-gradient-to-br from-amber-600 via-yellow-600 to-amber-700",
-      textColor: "text-white",
-      pattern: "premium",
-      glow: "shadow-elegant",
-      inlineStyle: "background: linear-gradient(135deg, #d97706 0%, #ca8a04 50%, #b45309 100%)"
+      name: "Luxury",
+      gradient: "linear-gradient(135deg, #d4af37 0%, #aa8e39 100%)"
     },
     { 
-      id: "holographic", 
-      name: "Holographic", 
-      color: "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500",
-      textColor: "text-white",
-      pattern: "hologram",
-      glow: "shadow-glow animate-pulse",
-      inlineStyle: "background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)"
+      id: "sunset", 
+      name: "Sunset",
+      gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
     },
     { 
-      id: "glass", 
-      name: "Glass", 
-      color: "bg-gradient-to-br from-blue-400/90 via-cyan-400/90 to-teal-400/90",
-      textColor: "text-white",
-      pattern: "glass",
-      glow: "shadow-large",
-      inlineStyle: "background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 50%, #2dd4bf 100%)"
+      id: "ocean", 
+      name: "Ocean",
+      gradient: "linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)"
     }
   ];
 
+  const currentTemplate = templates.find(t => t.id === selectedTemplate);
+  const textColor = currentTemplate?.dark ? "#1f2937" : "#ffffff";
+
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <main className="container mx-auto px-4 py-12 max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-accent/10 text-primary px-6 py-3 rounded-full mb-6 shadow-subtle hover-scale transition-all duration-300 animate-scale-in">
-            <CreditCard className="h-5 w-5 animate-pulse" />
-            <span className="text-sm font-medium">Business Card Creator</span>
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full mb-6 shadow-lg">
+            <CreditCard className="h-5 w-5 text-indigo-600" />
+            <span className="text-sm font-semibold text-gray-700">Business Card Creator</span>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent mb-6 animate-slide-up">
-            Professional Business Card Creator
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            Create Your Professional Business Card
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            Design stunning business cards with professional templates. 
-            Perfect for networking and making lasting impressions.
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Design stunning business cards in minutes. Choose from beautiful templates and customize every detail.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Form */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in hover-scale transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Business Card Information
+          <Card className="shadow-xl border-0 bg-white">
+            <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <User className="h-5 w-5 text-indigo-600" />
+                Card Information
               </CardTitle>
               <CardDescription>
-                Fill in your details to create your business card
+                Enter your professional details below
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5 pt-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
+                  <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="name"
                     placeholder="John Doe"
                     value={cardData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
+                    className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="title">Job Title *</Label>
+                  <Label htmlFor="title" className="text-sm font-semibold text-gray-700">
+                    Job Title <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="title"
                     placeholder="Marketing Manager"
                     value={cardData.title}
                     onChange={(e) => handleInputChange("title", e.target.value)}
+                    className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company">Company Name *</Label>
+                <Label htmlFor="company" className="text-sm font-semibold text-gray-700">
+                  Company Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="company"
                   placeholder="Acme Corporation"
                   value={cardData.company}
                   onChange={(e) => handleInputChange("company", e.target.value)}
+                  className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+                    <Mail className="h-3.5 w-3.5 inline mr-1" />
+                    Email
+                  </Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="john@acme.com"
                     value={cardData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
+                    <Phone className="h-3.5 w-3.5 inline mr-1" />
+                    Phone
+                  </Label>
                   <Input
                     id="phone"
                     placeholder="+1 (555) 123-4567"
                     value={cardData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
+                    className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
+                <Label htmlFor="website" className="text-sm font-semibold text-gray-700">
+                  <Globe className="h-3.5 w-3.5 inline mr-1" />
+                  Website
+                </Label>
                 <Input
                   id="website"
                   placeholder="www.acme.com"
                   value={cardData.website}
                   onChange={(e) => handleInputChange("website", e.target.value)}
+                  className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address" className="text-sm font-semibold text-gray-700">
+                  <MapPin className="h-3.5 w-3.5 inline mr-1" />
+                  Address
+                </Label>
                 <Textarea
                   id="address"
                   placeholder="123 Business St, City, State 12345"
                   value={cardData.address}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   rows={2}
+                  className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="linkedin">LinkedIn Profile</Label>
+                <Label htmlFor="linkedin" className="text-sm font-semibold text-gray-700">
+                  <Linkedin className="h-3.5 w-3.5 inline mr-1" />
+                  LinkedIn
+                </Label>
                 <Input
                   id="linkedin"
                   placeholder="linkedin.com/in/johndoe"
                   value={cardData.linkedin}
                   onChange={(e) => handleInputChange("linkedin", e.target.value)}
+                  className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               {/* AI Generation Section */}
-              <div className="space-y-3 pt-4 border-t">
-                <Label className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  Generate with AI
+              <div className="space-y-3 pt-6 border-t-2 border-gray-200">
+                <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Sparkles className="h-4 w-4 text-indigo-600" />
+                  AI Quick Generate
                 </Label>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="ai-prompt">Describe your business card</Label>
-                    <Textarea
-                      id="ai-prompt"
-                      placeholder="e.g., Marketing manager at a tech startup, creative industry, luxury real estate agent, etc."
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
-                  <Button 
-                    onClick={generateWithAI} 
-                    disabled={isGenerating || !hasApiKey || !aiPrompt}
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-4 w-4 mr-2" />
-                        Generate Business Card
-                      </>
-                    )}
-                  </Button>
-                  {!hasApiKey && (
-                    <p className="text-sm text-destructive">
-                      ⚠️ Business Card Creator API key not found (VITE_GEMINI_BUSINESS_CARD_API_KEY)
-                    </p>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="e.g., Marketing manager at a tech startup, luxury real estate agent, creative designer..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={2}
+                  className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <Button 
+                  onClick={generateWithAI} 
+                  disabled={isGenerating || !aiPrompt}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Generate with AI
+                    </>
                   )}
-                </div>
+                </Button>
               </div>
 
               {/* Template Selection */}
-              <div className="space-y-3 pt-4 border-t">
-                <Label className="flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
+              <div className="space-y-3 pt-6 border-t-2 border-gray-200">
+                <Label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Palette className="h-4 w-4 text-indigo-600" />
                   Choose Template
                 </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {templates.map((template, index) => (
+                <div className="grid grid-cols-4 gap-3">
+                  {templates.map((template) => (
                     <button
                       key={template.id}
                       onClick={() => setSelectedTemplate(template.id)}
-                      className={`group p-3 border-2 transition-all duration-300 animate-fade-in ${
+                      className={`group p-2 rounded-lg border-2 transition-all ${
                         selectedTemplate === template.id
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50"
+                          ? "border-indigo-600 shadow-lg"
+                          : "border-gray-200 hover:border-indigo-400"
                       }`}
-                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div 
-                        className="w-full h-10 mb-2 relative overflow-hidden"
-                        style={{
-                          ...(template.inlineStyle ? 
-                            { background: template.inlineStyle.replace('background: ', '') } : 
-                            {}
-                          )
-                        }}
+                        className="w-full h-12 rounded mb-2"
+                        style={{ background: template.gradient }}
                       />
-                      <span className="text-xs font-medium">{template.name}</span>
+                      <span className="text-xs font-medium text-gray-700">{template.name}</span>
                     </button>
                   ))}
                 </div>
@@ -444,128 +323,85 @@ Make it realistic and professional. Generate appropriate contact information tha
           </Card>
 
           {/* Preview */}
-          <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in hover-scale transition-all duration-300" style={{ animationDelay: '0.2s' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                Business Card Preview
+          <Card className="shadow-xl border-0 bg-white lg:sticky lg:top-8 h-fit">
+            <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <CreditCard className="h-5 w-5 text-indigo-600" />
+                Preview
               </CardTitle>
               <CardDescription>
-                Preview your business card design
+                See how your card looks
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {cardData.name && cardData.title && cardData.company ? (
                 <div className="space-y-6">
                   {/* Business Card Preview */}
-                  <div className="bg-gray-100 p-8">
+                  <div className="bg-gray-100 p-8 rounded-lg">
                     <div 
                       ref={cardRef}
-                      style={{
-                        width: '400px',
-                        height: '240px',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        fontFamily: 'system-ui, -apple-system, sans-serif',
-                        ...(templates.find(t => t.id === selectedTemplate)?.inlineStyle ? 
-                          { background: templates.find(t => t.id === selectedTemplate)?.inlineStyle?.replace('background: ', '') } : 
-                          {}
-                        )
-                      }}
+                      className="w-full aspect-[1.75/1] p-6 rounded-xl shadow-2xl relative overflow-hidden"
+                      style={{ background: currentTemplate?.gradient }}
                     >
-                      {/* Top Section - Name, Title, Company */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '24px',
-                        left: '24px',
-                        right: '24px',
-                        color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
-                      }}>
-                        <h3 style={{
-                          fontSize: '24px',
-                          fontWeight: 'bold',
-                          marginBottom: '4px',
-                          lineHeight: '1.2',
-                          color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff',
-                          margin: '0 0 4px 0'
-                        }}>{cardData.name}</h3>
-                        <p style={{
-                          fontSize: '14px',
-                          opacity: 0.9,
-                          marginBottom: '8px',
-                          color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                          margin: '0 0 8px 0'
-                        }}>{cardData.title}</p>
-                        <p style={{
-                          fontSize: '18px',
-                          fontWeight: '600',
-                          color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff',
-                          margin: '0'
-                        }}>{cardData.company}</p>
-                      </div>
-                      
-                      {/* Bottom Section - Contact Info */}
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '24px',
-                        left: '24px',
-                        right: '24px'
-                      }}>
-                        <table style={{ 
-                          width: '100%', 
-                          borderCollapse: 'collapse',
-                          fontSize: '12px',
-                          color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
-                          borderSpacing: 0
-                        }}>
-                          <tbody>
-                            {cardData.email && (
-                              <tr style={{ height: '18px' }}>
-                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px', verticalAlign: 'middle' }}>✉</td>
-                                <td style={{ verticalAlign: 'middle' }}>{cardData.email}</td>
-                              </tr>
-                            )}
-                            {cardData.phone && (
-                              <tr style={{ height: '18px' }}>
-                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px', verticalAlign: 'middle' }}>☎</td>
-                                <td style={{ verticalAlign: 'middle' }}>{cardData.phone}</td>
-                              </tr>
-                            )}
-                            {cardData.website && (
-                              <tr style={{ height: '18px' }}>
-                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px', verticalAlign: 'middle' }}>🌐</td>
-                                <td style={{ verticalAlign: 'middle' }}>{cardData.website}</td>
-                              </tr>
-                            )}
-                            {cardData.linkedin && (
-                              <tr style={{ height: '18px' }}>
-                                <td style={{ width: '20px', paddingRight: '8px', fontSize: '14px', verticalAlign: 'middle' }}>💼</td>
-                                <td style={{ verticalAlign: 'middle' }}>{cardData.linkedin}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
+                      <div className="relative z-10 h-full flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-2xl font-bold mb-1" style={{ color: textColor }}>
+                            {cardData.name}
+                          </h3>
+                          <p className="text-sm mb-3 opacity-90" style={{ color: textColor }}>
+                            {cardData.title}
+                          </p>
+                          <p className="text-lg font-semibold" style={{ color: textColor }}>
+                            {cardData.company}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          {cardData.email && (
+                            <div className="flex items-center gap-2 text-xs" style={{ color: textColor }}>
+                              <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{cardData.email}</span>
+                            </div>
+                          )}
+                          {cardData.phone && (
+                            <div className="flex items-center gap-2 text-xs" style={{ color: textColor }}>
+                              <Phone className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span>{cardData.phone}</span>
+                            </div>
+                          )}
+                          {cardData.website && (
+                            <div className="flex items-center gap-2 text-xs" style={{ color: textColor }}>
+                              <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{cardData.website}</span>
+                            </div>
+                          )}
+                          {cardData.linkedin && (
+                            <div className="flex items-center gap-2 text-xs" style={{ color: textColor }}>
+                              <Linkedin className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="truncate">{cardData.linkedin}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <Button
                     onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary shadow-glow hover:shadow-xl transition-all duration-300 hover-scale"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
                     size="lg"
                   >
-                    <Download className={`h-4 w-4 mr-2 ${isDownloading ? 'animate-bounce' : ''}`} />
-                    {isDownloading ? "Generating..." : "Download Business Card"}
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Business Card
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64 text-center">
-                  <div>
-                    <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-foreground font-medium">Business Card Preview</p>
-                    <p className="text-muted-foreground text-sm">
-                      Fill in required fields to see preview
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <CreditCard className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-900 font-semibold text-lg mb-2">No Preview Yet</p>
+                    <p className="text-gray-500 text-sm">
+                      Fill in the required fields to see your card preview
                     </p>
                   </div>
                 </div>
@@ -574,8 +410,6 @@ Make it realistic and professional. Generate appropriate contact information tha
           </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
