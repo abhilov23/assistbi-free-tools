@@ -464,7 +464,6 @@ Make it realistic and professional. Generate appropriate contact information tha
                       style={{
                         width: '400px',
                         height: '240px',
-                        padding: '24px',
                         position: 'relative',
                         overflow: 'hidden',
                         fontFamily: 'system-ui, -apple-system, sans-serif',
@@ -474,92 +473,112 @@ Make it realistic and professional. Generate appropriate contact information tha
                         )
                       }}
                     >
+                      {/* Top Section - Name, Title, Company */}
                       <div style={{
-                        position: 'relative',
-                        zIndex: 10,
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
+                        position: 'absolute',
+                        top: '24px',
+                        left: '24px',
+                        right: '24px',
                         color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
                       }}>
-                        {/* Top Section - Name and Title */}
-                        <div>
-                          <h3 style={{
-                            fontSize: '24px',
-                            fontWeight: 'bold',
-                            marginBottom: '4px',
-                            lineHeight: '1.2',
-                            color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
-                          }}>{cardData.name}</h3>
-                          <p style={{
-                            fontSize: '14px',
-                            opacity: 0.9,
-                            marginBottom: '8px',
+                        <h3 style={{
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                          marginBottom: '4px',
+                          lineHeight: '1.2',
+                          color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff',
+                          margin: '0 0 4px 0'
+                        }}>{cardData.name}</h3>
+                        <p style={{
+                          fontSize: '14px',
+                          opacity: 0.9,
+                          marginBottom: '8px',
+                          color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
+                          margin: '0 0 8px 0'
+                        }}>{cardData.title}</p>
+                        <p style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff',
+                          margin: '0'
+                        }}>{cardData.company}</p>
+                      </div>
+                      
+                      {/* Bottom Section - Contact Info */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '24px',
+                        left: '24px',
+                        right: '24px'
+                      }}>
+                        {cardData.email && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '6px',
+                            fontSize: '12px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
-                          }}>{cardData.title}</p>
-                          <p style={{
-                            fontSize: '18px',
-                            fontWeight: '600',
-                            color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
-                          }}>{cardData.company}</p>
-                        </div>
-                        
-                        {/* Bottom Section - Contact Info */}
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px'
-                        }}>
-                          {cardData.email && (
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12px',
-                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
-                            }}>
-                              <Mail style={{ width: '14px', height: '14px', flexShrink: 0 }} />
-                              <span style={{ lineHeight: '1.2' }}>{cardData.email}</span>
-                            </div>
-                          )}
-                          {cardData.phone && (
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12px',
-                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
-                            }}>
-                              <Phone style={{ width: '14px', height: '14px', flexShrink: 0 }} />
-                              <span style={{ lineHeight: '1.2' }}>{cardData.phone}</span>
-                            </div>
-                          )}
-                          {cardData.website && (
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12px',
-                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
-                            }}>
-                              <Globe style={{ width: '14px', height: '14px', flexShrink: 0 }} />
-                              <span style={{ lineHeight: '1.2' }}>{cardData.website}</span>
-                            </div>
-                          )}
-                          {cardData.linkedin && (
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontSize: '12px',
-                              color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
-                            }}>
-                              <Linkedin style={{ width: '14px', height: '14px', flexShrink: 0 }} />
-                              <span style={{ lineHeight: '1.2' }}>{cardData.linkedin}</span>
-                            </div>
-                          )}
-                        </div>
+                          }}>
+                            <Mail style={{ 
+                              width: '14px', 
+                              height: '14px', 
+                              marginRight: '8px',
+                              flexShrink: 0 
+                            }} />
+                            <span style={{ lineHeight: '1.2' }}>{cardData.email}</span>
+                          </div>
+                        )}
+                        {cardData.phone && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '6px',
+                            fontSize: '12px',
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                          }}>
+                            <Phone style={{ 
+                              width: '14px', 
+                              height: '14px', 
+                              marginRight: '8px',
+                              flexShrink: 0 
+                            }} />
+                            <span style={{ lineHeight: '1.2' }}>{cardData.phone}</span>
+                          </div>
+                        )}
+                        {cardData.website && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '6px',
+                            fontSize: '12px',
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                          }}>
+                            <Globe style={{ 
+                              width: '14px', 
+                              height: '14px', 
+                              marginRight: '8px',
+                              flexShrink: 0 
+                            }} />
+                            <span style={{ lineHeight: '1.2' }}>{cardData.website}</span>
+                          </div>
+                        )}
+                        {cardData.linkedin && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '0',
+                            fontSize: '12px',
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                          }}>
+                            <Linkedin style={{ 
+                              width: '14px', 
+                              height: '14px', 
+                              marginRight: '8px',
+                              flexShrink: 0 
+                            }} />
+                            <span style={{ lineHeight: '1.2' }}>{cardData.linkedin}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
