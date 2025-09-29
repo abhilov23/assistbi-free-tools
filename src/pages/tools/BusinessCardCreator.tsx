@@ -513,78 +513,62 @@ Make it realistic and professional. Generate appropriate contact information tha
                       }}>
                         {cardData.email && (
                           <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
+                            lineHeight: '16px'
                           }}>
                             <span style={{ 
-                              width: '14px', 
-                              height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0,
                               fontSize: '14px',
-                              display: 'inline-block'
+                              verticalAlign: 'middle'
                             }}>✉</span>
-                            <span style={{ lineHeight: '1.2' }}>{cardData.email}</span>
+                            <span style={{ verticalAlign: 'middle' }}>{cardData.email}</span>
                           </div>
                         )}
                         {cardData.phone && (
                           <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
+                            lineHeight: '16px'
                           }}>
                             <span style={{ 
-                              width: '14px', 
-                              height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0,
                               fontSize: '14px',
-                              display: 'inline-block'
+                              verticalAlign: 'middle'
                             }}>☎</span>
-                            <span style={{ lineHeight: '1.2' }}>{cardData.phone}</span>
+                            <span style={{ verticalAlign: 'middle' }}>{cardData.phone}</span>
                           </div>
                         )}
                         {cardData.website && (
                           <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
                             marginBottom: '6px',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
+                            lineHeight: '16px'
                           }}>
                             <span style={{ 
-                              width: '14px', 
-                              height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0,
                               fontSize: '14px',
-                              display: 'inline-block'
+                              verticalAlign: 'middle'
                             }}>🌐</span>
-                            <span style={{ lineHeight: '1.2' }}>{cardData.website}</span>
+                            <span style={{ verticalAlign: 'middle' }}>{cardData.website}</span>
                           </div>
                         )}
                         {cardData.linkedin && (
                           <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
                             marginBottom: '0',
                             fontSize: '12px',
-                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
+                            color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff',
+                            lineHeight: '16px'
                           }}>
                             <span style={{ 
-                              width: '14px', 
-                              height: '14px', 
                               marginRight: '8px',
-                              flexShrink: 0,
                               fontSize: '14px',
-                              display: 'inline-block'
+                              verticalAlign: 'middle'
                             }}>💼</span>
-                            <span style={{ lineHeight: '1.2' }}>{cardData.linkedin}</span>
+                            <span style={{ verticalAlign: 'middle' }}>{cardData.linkedin}</span>
                           </div>
                         )}
                       </div>
