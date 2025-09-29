@@ -1,219 +1,260 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Upload, FileText, Download, CheckCircle, AlertTriangle } from "lucide-react";
-import { PDFDocument } from "pdf-lib";
-import * as XLSX from 'xlsx';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
+import { FileText, Upload, Download, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import * as pdfjsLib from 'pdfjs-dist';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import * as XLSX from 'xlsx';
 
 const PDFConverter = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [isConverting, setIsConverting] = useState(false);
-  const [fileInfo, setFileInfo] = useState<{pages?: number, size: string, type: string} | null>(null);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const [conversionType, setConversionType] = useState<'word' | 'excel' | null>(null);
-  const [isProcessed, setIsProcessed] = useState(false);
   const { toast } = useToast();
+  const [file, setFile] = useState(null);
+  const [isConverting, setIsConverting] = useState(false);
+  const [convertedText, setConvertedText] = useState("");
+  const [outputFormat, setOutputFormat] = useState("word");
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  const extractTextFromPDF = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += pageText + '\n\n';
-    }
-
-    return fullText.trim();
-  };
-
-  const extractTextFromDOCX = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer });
-    return result.value;
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      console.log('File selected:', selectedFile.name, selectedFile.size);
-      
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: "Please select a file smaller than 10MB",
-          variant: "destructive"
-        });
-        return;
-      }
-
+  const handleFileUpload = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile && selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
-      setIsProcessed(false);
-      setFileInfo(null);
-      setExtractedText("");
-      
-      try {
-        console.log('Processing file...');
-        const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
-        let text = '';
-        let info: {pages?: number, size: string, type: string};
-
-        if (selectedFile.type === 'application/pdf') {
-          // Extract text from PDF
-          text = await extractTextFromPDF(selectedFile);
-          const arrayBuffer = await selectedFile.arrayBuffer();
-          const pdfDoc = await PDFDocument.load(arrayBuffer);
-          const pageCount = pdfDoc.getPageCount();
-          
-          info = {
-            pages: pageCount,
-            size: fileSizeMB,
-            type: 'PDF'
-          };
-        } else if (selectedFile.name.endsWith('.docx') || selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          // Extract text from DOCX
-          text = await extractTextFromDOCX(selectedFile);
-          info = {
-            size: fileSizeMB,
-            type: 'Word Document'
-          };
-        } else {
-          throw new Error('Unsupported file type');
-        }
-
-        setExtractedText(text);
-        setFileInfo(info);
-        setIsProcessed(true);
-
-        toast({
-          title: "File loaded successfully",
-          description: `Extracted ${text.length} characters of text`,
-        });
-        
-        console.log('File processing completed successfully');
-        
-      } catch (error) {
-        console.error('Error processing file:', error);
-        setFileInfo(null);
-        setExtractedText("");
-        setIsProcessed(false);
-        toast({
-          title: "Error processing file",
-          description: "Failed to read the file. Please try a different file.",
-          variant: "destructive"
-        });
-      }
+      setConvertedText("");
+      setProgress({ current: 0, total: 0 });
+      toast({
+        title: "File Loaded",
+        description: `${selectedFile.name} is ready to convert`,
+      });
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please upload a PDF file",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleConvert = async (type: 'word' | 'excel') => {
-    if (!file || !fileInfo || !extractedText) return;
-    
-    setIsConverting(true);
-    setConversionType(type);
-    
+  const extractTextFromPDF = async (pdfFile) => {
     try {
-      const fileName = file.name.replace(/\.(pdf|docx)$/i, '');
+      const arrayBuffer = await pdfFile.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
       
-      if (type === 'word') {
-        // Create DOCX with extracted content
-        const paragraphs = extractedText.split('\n').map(line => {
-          if (line.trim() === '') {
-            return new Paragraph({
-              children: [new TextRun({ text: "" })],
-            });
-          }
-          
-          return new Paragraph({
-            children: [
-              new TextRun({
-                text: line,
-                size: 22,
-              }),
-            ],
-          });
-        });
-
-        const doc = new Document({
-          sections: [{
-            properties: {},
-            children: paragraphs,
-          }],
-        });
-
-        const blob = await Packer.toBlob(doc);
-        const element = document.createElement('a');
-        element.href = URL.createObjectURL(blob);
-        element.download = `${fileName}.docx`;
-        element.click();
+      setProgress({ current: 0, total: pdf.numPages });
+      
+      let fullText = "";
+      const textByPage = [];
+      
+      // Extract text from each page
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        setProgress({ current: pageNum, total: pdf.numPages });
         
-        toast({
-          title: "Word document created",
-          description: `${fileName}.docx has been downloaded`,
-        });
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
         
-      } else {
-        // Create Excel with extracted text
-        const lines = extractedText.split('\n').filter(line => line.trim());
-        const worksheetData = [
-          ['Document Conversion'],
-          [''],
-          ['File Information'],
-          ['Original File:', file.name],
-          ['File Size (MB):', fileInfo.size],
-          ['File Type:', fileInfo.type],
-          ...(fileInfo.pages ? [['Pages:', fileInfo.pages]] : []),
-          ['Conversion Date:', new Date().toLocaleDateString()],
-          [''],
-          ['Extracted Content'],
-          ['Line #', 'Text'],
-          ...lines.map((line, index) => [index + 1, line]),
-        ];
+        // Combine text items with proper spacing
+        let pageText = "";
+        let lastY = null;
         
-        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-        
-        // Style headers
-        ['A1', 'A3', 'A10'].forEach(cell => {
-          if (worksheet[cell]) {
-            worksheet[cell].s = {
-              font: { bold: true, sz: 14 },
-              fill: { fgColor: { rgb: "E3F2FD" } }
-            };
+        textContent.items.forEach((item, index) => {
+          if ('str' in item) {
+            // Add line break if Y position changed significantly
+            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+              pageText += '\n';
+            }
+            
+            // Add space between words if needed
+            if (index > 0 && item.str.trim() && !pageText.endsWith(' ')) {
+              pageText += ' ';
+            }
+            
+            pageText += item.str;
+            lastY = item.transform[5];
           }
         });
         
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Document Content');
-        
-        XLSX.writeFile(workbook, `${fileName}.xlsx`);
-        
-        toast({
-          title: "Excel spreadsheet created",
-          description: `${fileName}.xlsx has been downloaded`,
+        textByPage.push({
+          pageNumber: pageNum,
+          text: pageText.trim()
         });
+        
+        fullText += pageText.trim() + '\n\n';
       }
       
+      return { fullText: fullText.trim(), textByPage };
     } catch (error) {
-      console.error('Conversion error:', error);
+      console.error("Error extracting text from PDF:", error);
+      throw new Error(`Failed to extract text from PDF: ${error.message}`);
+    }
+  };
+
+  const convertToWord = async (textData) => {
+    try {
+      const { fullText, textByPage } = textData;
+      
+      // Create paragraphs for the document
+      const children = [];
+      
+      // Add title
+      children.push(
+        new Paragraph({
+          text: `Converted from: ${file.name}`,
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 400 }
+        })
+      );
+      
+      // Add content by page
+      textByPage.forEach((pageData, index) => {
+        // Add page header
+        children.push(
+          new Paragraph({
+            text: `Page ${pageData.pageNumber}`,
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 400, after: 200 }
+          })
+        );
+        
+        // Split page text into paragraphs
+        const paragraphs = pageData.text.split('\n').filter(p => p.trim());
+        paragraphs.forEach(para => {
+          children.push(
+            new Paragraph({
+              children: [new TextRun(para)],
+              spacing: { after: 200 }
+            })
+          );
+        });
+      });
+      
+      // Create Word document
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
+        }]
+      });
+      
+      // Generate blob
+      const blob = await Packer.toBlob(doc);
+      return blob;
+    } catch (error) {
+      console.error("Error creating Word document:", error);
+      throw new Error(`Failed to create Word document: ${error.message}`);
+    }
+  };
+
+  const convertToExcel = (textData) => {
+    try {
+      const { textByPage } = textData;
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Create a worksheet for each page or all in one
+      if (textByPage.length <= 10) {
+        // Separate sheet for each page if 10 or fewer pages
+        textByPage.forEach(pageData => {
+          const lines = pageData.text.split('\n').filter(line => line.trim());
+          const wsData = [
+            [`Page ${pageData.pageNumber}`],
+            [''],
+            ...lines.map(line => [line])
+          ];
+          
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          ws['!cols'] = [{ wch: 100 }];
+          
+          XLSX.utils.book_append_sheet(wb, ws, `Page ${pageData.pageNumber}`);
+        });
+      } else {
+        // Single sheet with all content
+        const allLines = [['Page', 'Content']];
+        textByPage.forEach(pageData => {
+          const lines = pageData.text.split('\n').filter(line => line.trim());
+          lines.forEach((line, index) => {
+            allLines.push([
+              index === 0 ? `Page ${pageData.pageNumber}` : '',
+              line
+            ]);
+          });
+          allLines.push(['', '']); // Empty row between pages
+        });
+        
+        const ws = XLSX.utils.aoa_to_sheet(allLines);
+        ws['!cols'] = [{ wch: 15 }, { wch: 100 }];
+        
+        XLSX.utils.book_append_sheet(wb, ws, "All Pages");
+      }
+      
+      // Generate Excel file
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      return new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+    } catch (error) {
+      console.error("Error creating Excel file:", error);
+      throw new Error(`Failed to create Excel file: ${error.message}`);
+    }
+  };
+
+  const handleConvert = async () => {
+    if (!file) {
       toast({
-        title: "Conversion failed",
-        description: "An error occurred during conversion. Please try again.",
-        variant: "destructive"
+        title: "No File Selected",
+        description: "Please upload a PDF file first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConverting(true);
+    setProgress({ current: 0, total: 0 });
+
+    try {
+      // Extract text from PDF
+      const textData = await extractTextFromPDF(file);
+      setConvertedText(textData.fullText);
+
+      // Convert to selected format
+      let blob;
+      let filename;
+      
+      if (outputFormat === "word") {
+        blob = await convertToWord(textData);
+        filename = file.name.replace('.pdf', '.docx');
+      } else {
+        blob = convertToExcel(textData);
+        filename = file.name.replace('.pdf', '.xlsx');
+      }
+
+      // Download file
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Conversion Successful!",
+        description: `Your PDF has been converted to ${outputFormat === 'word' ? 'Word' : 'Excel'}`,
+      });
+    } catch (error) {
+      console.error("Conversion error:", error);
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "An error occurred during conversion",
+        variant: "destructive",
       });
     } finally {
       setIsConverting(false);
-      setConversionType(null);
+      setProgress({ current: 0, total: 0 });
     }
   };
 
@@ -221,219 +262,243 @@ const PDFConverter = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
-            <FileText className="h-4 w-4" />
-            <span className="text-sm font-medium">PDF Converter</span>
+        <div className="text-center mb-12 animate-fade-in">
+          <div className="inline-flex items-center gap-2 bg-primary/10 px-6 py-3 rounded-full mb-6 shadow-soft">
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-sm font-semibold text-primary">PDF Converter</span>
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            PDF & Word Document Converter
+          <h1 className="text-5xl font-bold text-foreground mb-4">
+            PDF to Word/Excel Converter
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Convert PDF to Word/Excel or Word to Excel with full text extraction. 
-            No installation required, completely free.
+            Convert your PDF files to editable Word documents or Excel spreadsheets instantly
           </p>
         </div>
 
-        {/* Main Tool */}
-        <div className="max-w-2xl mx-auto">
-          <Card className="shadow-large border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Upload Section */}
+          <Card className="shadow-large border-2 bg-card">
+            <CardHeader className="border-b bg-muted/30">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 <Upload className="h-5 w-5 text-primary" />
-                Upload Your File
+                Upload PDF File
               </CardTitle>
               <CardDescription>
-                Select a PDF or Word document to convert. Max file size: 10MB
+                Select a PDF file to convert
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* File Upload Area */}
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-smooth">
-                <input
-                  type="file"
-                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="pdf-upload"
-                />
-                <label
-                  htmlFor="pdf-upload"
-                  className="cursor-pointer flex flex-col items-center gap-4"
-                >
-                  <div className="p-4 bg-primary/10 rounded-full">
-                    <Upload className="h-8 w-8 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-medium text-foreground">
-                      Click to upload PDF or Word file
+            <CardContent className="space-y-6 pt-6">
+              {/* File Upload */}
+              <div className="space-y-3">
+                <Label htmlFor="pdf-file" className="text-sm font-semibold">
+                  Select PDF File
+                </Label>
+                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-all cursor-pointer bg-muted/20">
+                  <input
+                    type="file"
+                    id="pdf-file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={isConverting}
+                  />
+                  <label htmlFor="pdf-file" className="cursor-pointer">
+                    <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-foreground font-medium mb-2">
+                      Click to upload PDF
                     </p>
-                    <p className="text-muted-foreground">
-                      Or drag and drop your file here (.pdf, .docx)
+                    <p className="text-sm text-muted-foreground">
+                      Maximum file size: 10MB
                     </p>
+                  </label>
+                </div>
+                {file && (
+                  <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
                   </div>
-                </label>
+                )}
               </div>
 
-              {/* Selected File */}
-              {file && (
-                <div className="bg-muted/50 rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-8 w-8 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {fileInfo 
-                            ? `${fileInfo.type}${fileInfo.pages ? ` • ${fileInfo.pages} pages` : ''} • ${fileInfo.size} MB`
-                            : `${(file.size / 1024 / 1024).toFixed(2)} MB`
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setFile(null);
-                        setFileInfo(null);
-                        setExtractedText("");
-                        setIsProcessed(false);
-                      }}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  
-                  {fileInfo && isProcessed && (
-                    <div className="grid grid-cols-3 gap-4 p-3 bg-background/50 rounded-lg">
-                      {fileInfo.pages && (
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-primary">{fileInfo.pages}</div>
-                          <div className="text-xs text-muted-foreground">Pages</div>
-                        </div>
-                      )}
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-secondary">{extractedText.split(/\s+/).length}</div>
-                        <div className="text-xs text-muted-foreground">Words</div>
-                      </div>
-                      <div className="text-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
-                        <div className="text-xs text-muted-foreground">Ready</div>
-                      </div>
-                    </div>
-                  )}
+              {/* Output Format */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">
+                  Output Format
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setOutputFormat("word")}
+                    disabled={isConverting}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      outputFormat === "word"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <span className="text-sm font-medium">Word (.docx)</span>
+                  </button>
+                  <button
+                    onClick={() => setOutputFormat("excel")}
+                    disabled={isConverting}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      outputFormat === "excel"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-success" />
+                    <span className="text-sm font-medium">Excel (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
 
-                  {isProcessed && (
-                    <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                      <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">File processed - {extractedText.length} characters extracted</span>
-                      </div>
-                    </div>
-                  )}
+              {/* Progress Bar */}
+              {isConverting && progress.total > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Processing...</span>
+                    <span className="text-foreground font-medium">
+                      Page {progress.current} of {progress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    />
+                  </div>
                 </div>
               )}
 
-              {/* Convert Options */}
-              {file && isProcessed && (
+              {/* Convert Button */}
+              <Button
+                onClick={handleConvert}
+                disabled={!file || isConverting}
+                className="w-full bg-primary hover:bg-primary/90"
+                size="lg"
+              >
+                {isConverting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-5 w-5 mr-2" />
+                    Convert to {outputFormat === "word" ? "Word" : "Excel"}
+                  </>
+                )}
+              </Button>
+
+              {/* Info */}
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-900">
+                  <p className="font-medium mb-1">Important Notes:</p>
+                  <ul className="list-disc list-inside space-y-1 text-blue-800">
+                    <li>Works best with text-based PDFs</li>
+                    <li>Scanned PDFs require OCR (not included)</li>
+                    <li>Complex formatting may not transfer perfectly</li>
+                    <li>Large files may take several minutes</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview Section */}
+          <Card className="shadow-large border-2 bg-card lg:sticky lg:top-8 h-fit">
+            <CardHeader className="border-b bg-muted/30">
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <FileText className="h-5 w-5 text-primary" />
+                Extracted Text Preview
+              </CardTitle>
+              <CardDescription>
+                Preview of the extracted content
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {convertedText ? (
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-foreground">Choose Output Format</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button
-                      onClick={() => handleConvert('word')}
-                      disabled={isConverting}
-                      className="flex items-center gap-2 h-12"
-                      variant="default"
-                    >
-                      {isConverting && conversionType === 'word' ? (
-                        "Converting to Word..."
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4" />
-                          Convert to Word
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => handleConvert('excel')}
-                      disabled={isConverting}
-                      className="flex items-center gap-2 h-12"
-                      variant="secondary"
-                    >
-                      {isConverting && conversionType === 'excel' ? (
-                        "Converting to Excel..."
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4" />
-                          Convert to Excel
-                        </>
-                      )}
-                    </Button>
+                  <div className="bg-muted/30 p-4 rounded-lg max-h-96 overflow-y-auto">
+                    <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
+                      {convertedText.substring(0, 2000)}
+                      {convertedText.length > 2000 && "\n\n... (showing first 2000 characters)"}
+                    </pre>
                   </div>
-                  
-                  <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">Real Text Extraction</p>
-                        <p className="text-amber-700 dark:text-amber-300">
-                          This tool extracts actual text content from your documents. For scanned PDFs or images,
-                          OCR processing would be required for text recognition.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Total characters: {convertedText.length.toLocaleString()}</span>
+                    <span>Words: {convertedText.split(/\s+/).length.toLocaleString()}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-foreground font-semibold text-lg mb-2">
+                      No Content Yet
+                    </p>
+                    <p className="text-muted-foreground text-sm">
+                      Upload and convert a PDF to see the extracted text
+                    </p>
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* FAQ Section */}
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-foreground mb-6">
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-foreground mb-2">
-                    What file formats are supported?
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Our converter supports PDF and Word documents (.docx), extracting real text content
-                    and converting to Microsoft Word (.docx) and Excel (.xlsx) formats.
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-foreground mb-2">
-                    Is my data secure?
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Yes! All file processing happens locally in your browser. Your files never leave your device, 
-                    ensuring complete privacy and security.
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Features Section */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border-2 bg-card/50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold text-foreground">Accurate Extraction</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Advanced text extraction preserves content structure and formatting from your PDFs
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-semibold text-foreground mb-2">
-                    What about scanned PDFs or images?
-                  </h3>
-                  <p className="text-muted-foreground">
-                    This converter works best with text-based PDFs. For scanned documents or image-based PDFs, 
-                    you may need OCR (Optical Character Recognition) capabilities which require server-side processing.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <Card className="border-2 bg-card/50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <CheckCircle2 className="h-6 w-6 text-success" />
+                </div>
+                <h3 className="font-semibold text-foreground">Multiple Formats</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Convert to Word documents (.docx) or Excel spreadsheets (.xlsx) with one click
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 bg-card/50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Download className="h-6 w-6 text-warning" />
+                </div>
+                <h3 className="font-semibold text-foreground">Instant Download</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Get your converted files immediately - no waiting, no email required
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
@@ -442,4 +507,4 @@ const PDFConverter = () => {
   );
 };
 
-export default PDFConverter;
+export default PDFConverter
