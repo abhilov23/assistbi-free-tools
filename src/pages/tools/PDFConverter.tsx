@@ -7,15 +7,42 @@ import { Upload, FileText, Download, CheckCircle, AlertTriangle } from "lucide-r
 import { PDFDocument } from "pdf-lib";
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
 import { useToast } from "@/hooks/use-toast";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const PDFConverter = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
-  const [pdfInfo, setPdfInfo] = useState<{pages: number, size: string} | null>(null);
+  const [fileInfo, setFileInfo] = useState<{pages?: number, size: string, type: string} | null>(null);
+  const [extractedText, setExtractedText] = useState<string>("");
   const [conversionType, setConversionType] = useState<'word' | 'excel' | null>(null);
   const [isProcessed, setIsProcessed] = useState(false);
   const { toast } = useToast();
+
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+
+    return fullText.trim();
+  };
+
+  const extractTextFromDOCX = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -25,7 +52,7 @@ const PDFConverter = () => {
       if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
-          description: "Please select a PDF file smaller than 10MB",
+          description: "Please select a file smaller than 10MB",
           variant: "destructive"
         });
         return;
@@ -33,107 +60,86 @@ const PDFConverter = () => {
 
       setFile(selectedFile);
       setIsProcessed(false);
-      setPdfInfo(null);
+      setFileInfo(null);
+      setExtractedText("");
       
       try {
-        console.log('Processing PDF file...');
-        const arrayBuffer = await selectedFile.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(arrayBuffer);
-        const pageCount = pdfDoc.getPageCount();
+        console.log('Processing file...');
         const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
-        
-        setPdfInfo({
-          pages: pageCount,
-          size: fileSizeMB
-        });
+        let text = '';
+        let info: {pages?: number, size: string, type: string};
 
+        if (selectedFile.type === 'application/pdf') {
+          // Extract text from PDF
+          text = await extractTextFromPDF(selectedFile);
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const pdfDoc = await PDFDocument.load(arrayBuffer);
+          const pageCount = pdfDoc.getPageCount();
+          
+          info = {
+            pages: pageCount,
+            size: fileSizeMB,
+            type: 'PDF'
+          };
+        } else if (selectedFile.name.endsWith('.docx') || selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          // Extract text from DOCX
+          text = await extractTextFromDOCX(selectedFile);
+          info = {
+            size: fileSizeMB,
+            type: 'Word Document'
+          };
+        } else {
+          throw new Error('Unsupported file type');
+        }
+
+        setExtractedText(text);
+        setFileInfo(info);
         setIsProcessed(true);
 
         toast({
-          title: "PDF loaded successfully",
-          description: `Ready to convert ${pageCount} pages`,
+          title: "File loaded successfully",
+          description: `Extracted ${text.length} characters of text`,
         });
         
-        console.log('PDF processing completed successfully');
+        console.log('File processing completed successfully');
         
       } catch (error) {
-        console.error('Error processing PDF:', error);
-        setPdfInfo(null);
+        console.error('Error processing file:', error);
+        setFileInfo(null);
+        setExtractedText("");
         setIsProcessed(false);
         toast({
-          title: "Error processing PDF",
-          description: "Failed to read the PDF file. Please try a different file.",
+          title: "Error processing file",
+          description: "Failed to read the file. Please try a different file.",
           variant: "destructive"
         });
       }
     }
   };
 
-  const generateSampleContent = (fileName: string, pages: number, size: string) => {
-    return `PDF Conversion Report
-=====================
-
-Original Document: ${fileName}
-Total Pages: ${pages}
-File Size: ${size} MB
-Conversion Date: ${new Date().toLocaleDateString()}
-Processing Time: ${new Date().toLocaleTimeString()}
-
-Document Analysis:
-- Successfully loaded ${pages} page(s)
-- PDF structure validated
-- Content ready for conversion
-
-Sample Content Structure:
-Page 1: Document Header and Introduction
-Page 2: Main content sections identified
-${pages > 2 ? `Page 3-${pages}: Additional content pages` : ''}
-
-Content Summary:
-This PDF document has been successfully processed and is ready for conversion.
-The document contains structured information across ${pages} page(s).
-
-For enhanced text extraction with OCR capabilities, connect to a backend service.
-This conversion includes document metadata and structural information.
-
-Technical Details:
-- File Format: PDF
-- Pages Processed: ${pages}
-- Conversion Type: Direct structure mapping
-- Output Format: Structured document conversion
-
-Note: This is a demonstration of PDF processing capabilities.
-Full text extraction would require advanced OCR processing for image-based content.`;
-  };
-
   const handleConvert = async (type: 'word' | 'excel') => {
-    if (!file || !pdfInfo) return;
+    if (!file || !fileInfo || !extractedText) return;
     
     setIsConverting(true);
     setConversionType(type);
     
     try {
-      const fileName = file.name.replace('.pdf', '');
-      const sampleContent = generateSampleContent(file.name, pdfInfo.pages, pdfInfo.size);
+      const fileName = file.name.replace(/\.(pdf|docx)$/i, '');
       
       if (type === 'word') {
-        // Create DOCX with sample content
-        const paragraphs = sampleContent.split('\n').map(line => {
+        // Create DOCX with extracted content
+        const paragraphs = extractedText.split('\n').map(line => {
           if (line.trim() === '') {
             return new Paragraph({
               children: [new TextRun({ text: "" })],
             });
           }
           
-          // Style headers
-          const isHeader = line.includes('===') || line.endsWith(':') || line.startsWith('Page ');
-          
           return new Paragraph({
             children: [
               new TextRun({
                 text: line,
-                bold: isHeader,
-                size: isHeader ? 24 : 22,
+                size: 22,
               }),
             ],
           });
@@ -158,30 +164,27 @@ Full text extraction would require advanced OCR processing for image-based conte
         });
         
       } else {
-        // Create Excel with structured data
+        // Create Excel with extracted text
+        const lines = extractedText.split('\n').filter(line => line.trim());
         const worksheetData = [
-          ['PDF Conversion Report'],
+          ['Document Conversion'],
           [''],
           ['File Information'],
           ['Original File:', file.name],
-          ['Pages:', pdfInfo.pages],
-          ['File Size (MB):', pdfInfo.size],
+          ['File Size (MB):', fileInfo.size],
+          ['File Type:', fileInfo.type],
+          ...(fileInfo.pages ? [['Pages:', fileInfo.pages]] : []),
           ['Conversion Date:', new Date().toLocaleDateString()],
           [''],
-          ['Content Analysis'],
-          ['Line #', 'Content'],
-          ...sampleContent.split('\n').map((line, index) => [index + 1, line]),
-          [''],
-          ['Summary Statistics'],
-          ['Total Lines:', sampleContent.split('\n').length],
-          ['Character Count:', sampleContent.length],
-          ['Word Count:', sampleContent.split(' ').length],
+          ['Extracted Content'],
+          ['Line #', 'Text'],
+          ...lines.map((line, index) => [index + 1, line]),
         ];
         
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
         
         // Style headers
-        ['A1', 'A3', 'A9', 'A13'].forEach(cell => {
+        ['A1', 'A3', 'A10'].forEach(cell => {
           if (worksheet[cell]) {
             worksheet[cell].s = {
               font: { bold: true, sz: 14 },
@@ -191,7 +194,7 @@ Full text extraction would require advanced OCR processing for image-based conte
         });
         
         const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'PDF Content');
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Document Content');
         
         XLSX.writeFile(workbook, `${fileName}.xlsx`);
         
@@ -226,10 +229,10 @@ Full text extraction would require advanced OCR processing for image-based conte
             <span className="text-sm font-medium">PDF Converter</span>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            PDF to Word/Excel Converter
+            PDF & Word Document Converter
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Convert your PDF files to editable Word documents or Excel spreadsheets in seconds. 
+            Convert PDF to Word/Excel or Word to Excel with full text extraction. 
             No installation required, completely free.
           </p>
         </div>
@@ -240,10 +243,10 @@ Full text extraction would require advanced OCR processing for image-based conte
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-primary" />
-                Upload Your PDF
+                Upload Your File
               </CardTitle>
               <CardDescription>
-                Select a PDF file to convert to Word or Excel format. Max file size: 10MB
+                Select a PDF or Word document to convert. Max file size: 10MB
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -251,7 +254,7 @@ Full text extraction would require advanced OCR processing for image-based conte
               <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/50 transition-smooth">
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   onChange={handleFileUpload}
                   className="hidden"
                   id="pdf-upload"
@@ -265,10 +268,10 @@ Full text extraction would require advanced OCR processing for image-based conte
                   </div>
                   <div>
                     <p className="text-lg font-medium text-foreground">
-                      Click to upload PDF file
+                      Click to upload PDF or Word file
                     </p>
                     <p className="text-muted-foreground">
-                      Or drag and drop your file here
+                      Or drag and drop your file here (.pdf, .docx)
                     </p>
                   </div>
                 </label>
@@ -283,8 +286,8 @@ Full text extraction would require advanced OCR processing for image-based conte
                       <div>
                         <p className="font-medium text-foreground">{file.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {pdfInfo 
-                            ? `${pdfInfo.pages} pages • ${pdfInfo.size} MB`
+                          {fileInfo 
+                            ? `${fileInfo.type}${fileInfo.pages ? ` • ${fileInfo.pages} pages` : ''} • ${fileInfo.size} MB`
                             : `${(file.size / 1024 / 1024).toFixed(2)} MB`
                           }
                         </p>
@@ -293,7 +296,8 @@ Full text extraction would require advanced OCR processing for image-based conte
                     <Button
                       onClick={() => {
                         setFile(null);
-                        setPdfInfo(null);
+                        setFileInfo(null);
+                        setExtractedText("");
                         setIsProcessed(false);
                       }}
                       variant="ghost"
@@ -303,15 +307,17 @@ Full text extraction would require advanced OCR processing for image-based conte
                     </Button>
                   </div>
                   
-                  {pdfInfo && isProcessed && (
+                  {fileInfo && isProcessed && (
                     <div className="grid grid-cols-3 gap-4 p-3 bg-background/50 rounded-lg">
+                      {fileInfo.pages && (
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-primary">{fileInfo.pages}</div>
+                          <div className="text-xs text-muted-foreground">Pages</div>
+                        </div>
+                      )}
                       <div className="text-center">
-                        <div className="text-lg font-bold text-primary">{pdfInfo.pages}</div>
-                        <div className="text-xs text-muted-foreground">Pages</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-secondary">{pdfInfo.size}</div>
-                        <div className="text-xs text-muted-foreground">MB</div>
+                        <div className="text-lg font-bold text-secondary">{extractedText.split(/\s+/).length}</div>
+                        <div className="text-xs text-muted-foreground">Words</div>
                       </div>
                       <div className="text-center">
                         <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
@@ -324,7 +330,7 @@ Full text extraction would require advanced OCR processing for image-based conte
                     <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
                       <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                         <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">PDF processed and ready for conversion</span>
+                        <span className="text-sm font-medium">File processed - {extractedText.length} characters extracted</span>
                       </div>
                     </div>
                   )}
@@ -372,10 +378,10 @@ Full text extraction would require advanced OCR processing for image-based conte
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
-                        <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">Processing Mode</p>
+                        <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">Real Text Extraction</p>
                         <p className="text-amber-700 dark:text-amber-300">
-                          Currently using structural conversion. For full text extraction with OCR capabilities, 
-                          backend integration would be required.
+                          This tool extracts actual text content from your documents. For scanned PDFs or images,
+                          OCR processing would be required for text recognition.
                         </p>
                       </div>
                     </div>
@@ -397,8 +403,8 @@ Full text extraction would require advanced OCR processing for image-based conte
                     What file formats are supported?
                   </h3>
                   <p className="text-muted-foreground">
-                    Our converter supports standard PDF files and can convert them to Microsoft Word (.docx) 
-                    and Excel (.xlsx) formats with high fidelity.
+                    Our converter supports PDF and Word documents (.docx), extracting real text content
+                    and converting to Microsoft Word (.docx) and Excel (.xlsx) formats.
                   </p>
                 </CardContent>
               </Card>
