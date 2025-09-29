@@ -112,7 +112,7 @@ Please provide ONLY a JSON response with the following structure (no other text)
 Make it realistic and professional. Generate appropriate contact information that fits the business description.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
