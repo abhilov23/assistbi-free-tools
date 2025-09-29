@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CreditCard, Download, Palette, User, Mail, Phone, Globe, MapPin, Linkedin, Sparkles, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
 
 const BusinessCardCreator = () => {
   const { toast } = useToast();
@@ -28,13 +29,32 @@ const BusinessCardCreator = () => {
     setCardData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!cardRef.current) return;
     
-    toast({
-      title: "Download Started",
-      description: "Your business card is being prepared for download",
-    });
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 3,
+        backgroundColor: null,
+        logging: false,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `business-card-${cardData.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast({
+        title: "Download Complete",
+        description: "Your business card has been downloaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate business card image",
+        variant: "destructive",
+      });
+    }
   };
 
   const generateWithAI = async () => {
