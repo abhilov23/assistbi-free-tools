@@ -461,60 +461,102 @@ Make it realistic and professional. Generate appropriate contact information tha
                   <div className="bg-gray-100 p-8">
                     <div 
                       ref={cardRef}
-                      className="w-full h-48 p-6 relative overflow-hidden"
                       style={{
+                        width: '400px',
+                        height: '240px',
+                        padding: '24px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        fontFamily: 'system-ui, -apple-system, sans-serif',
                         ...(templates.find(t => t.id === selectedTemplate)?.inlineStyle ? 
                           { background: templates.find(t => t.id === selectedTemplate)?.inlineStyle?.replace('background: ', '') } : 
                           {}
                         )
                       }}
                     >
-                      <div className="relative z-10 h-full flex flex-col justify-between" style={{
+                      <div style={{
+                        position: 'relative',
+                        zIndex: 10,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                         color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
                       }}>
+                        {/* Top Section - Name and Title */}
                         <div>
-                          <h3 className="text-xl font-bold mb-1 leading-tight" style={{
+                          <h3 style={{
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            marginBottom: '4px',
+                            lineHeight: '1.2',
                             color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
                           }}>{cardData.name}</h3>
-                          <p className="text-sm opacity-90 mb-2" style={{
+                          <p style={{
+                            fontSize: '14px',
+                            opacity: 0.9,
+                            marginBottom: '8px',
                             color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                           }}>{cardData.title}</p>
-                          <p className="text-lg font-semibold" style={{
+                          <p style={{
+                            fontSize: '18px',
+                            fontWeight: '600',
                             color: selectedTemplate === 'minimal' ? '#111827' : '#ffffff'
                           }}>{cardData.company}</p>
                         </div>
                         
-                        <div className="space-y-1">
+                        {/* Bottom Section - Contact Info */}
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px'
+                        }}>
                           {cardData.email && (
-                            <div className="flex items-center gap-2 text-xs" style={{
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
                               color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                             }}>
-                              <Mail className="h-3 w-3" />
-                              <span>{cardData.email}</span>
+                              <Mail style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                              <span style={{ lineHeight: '1.2' }}>{cardData.email}</span>
                             </div>
                           )}
                           {cardData.phone && (
-                            <div className="flex items-center gap-2 text-xs" style={{
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
                               color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                             }}>
-                              <Phone className="h-3 w-3" />
-                              <span>{cardData.phone}</span>
+                              <Phone style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                              <span style={{ lineHeight: '1.2' }}>{cardData.phone}</span>
                             </div>
                           )}
                           {cardData.website && (
-                            <div className="flex items-center gap-2 text-xs" style={{
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
                               color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                             }}>
-                              <Globe className="h-3 w-3" />
-                              <span>{cardData.website}</span>
+                              <Globe style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                              <span style={{ lineHeight: '1.2' }}>{cardData.website}</span>
                             </div>
                           )}
                           {cardData.linkedin && (
-                            <div className="flex items-center gap-2 text-xs" style={{
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '12px',
                               color: selectedTemplate === 'minimal' ? '#374151' : '#ffffff'
                             }}>
-                              <Linkedin className="h-3 w-3" />
-                              <span>{cardData.linkedin}</span>
+                              <Linkedin style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                              <span style={{ lineHeight: '1.2' }}>{cardData.linkedin}</span>
                             </div>
                           )}
                         </div>
