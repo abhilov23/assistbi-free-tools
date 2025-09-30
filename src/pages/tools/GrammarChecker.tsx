@@ -6,7 +6,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { CheckCircle, AlertTriangle, Info, AlertCircle, Volume2, VolumeX, Pause, Play, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { aiApiManager } from "@/lib/ai-api-manager";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface Issue {
   type: "grammar" | "spelling" | "style" | "clarity" | "conciseness";
@@ -94,6 +94,16 @@ const GrammarChecker = () => {
       return;
     }
 
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      toast({
+        title: "API Key Missing",
+        description: "Please set VITE_GEMINI_API_KEY in your .env file",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsChecking(true);
     setIssues([]);
     setCorrectedText("");
@@ -101,6 +111,12 @@ const GrammarChecker = () => {
     setImprovements([]);
 
     try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
+      });
+
       const systemMessage = `You are an expert grammar, spelling, and style checker. Analyze the given text and return a JSON response with the following structure:
 {
   "correctedText": "The fully corrected version of the text",
@@ -123,7 +139,8 @@ Focus on accuracy and be specific about issues. Provide constructive feedback.`;
 
 "${text}"`;
 
-      const response = await aiApiManager.makeRequest('grammar-checker', prompt, systemMessage);
+      const result = await model.generateContent([systemMessage, prompt]);
+      const response = result.response.text();
 
       // Try to parse JSON from response
       let analysisData: GrammarResponse;

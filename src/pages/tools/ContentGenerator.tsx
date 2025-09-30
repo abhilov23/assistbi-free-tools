@@ -9,26 +9,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { PenTool, Copy, Wand2, FileText, Mail, MessageSquare, Lightbulb } from "lucide-react";
-import { aiApiManager } from "@/lib/ai-api-manager";
+import { useToast } from "@/hooks/use-toast";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const ContentGenerator = () => {
+  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState("");
   const [currentProvider, setCurrentProvider] = useState<string>("Multiple AI Providers");
 
-  // Check if Content Generator has API key
-  const hasApiKey = aiApiManager.hasKey('content-generator');
-  
   // Blog Post States
   const [blogTopic, setBlogTopic] = useState("");
   const [blogTone, setBlogTone] = useState("professional");
   const [blogLength, setBlogLength] = useState("medium");
-  
+
   // Email States
   const [emailType, setEmailType] = useState("marketing");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContext, setEmailContext] = useState("");
-  
+
   // Social Media States
   const [socialPlatform, setSocialPlatform] = useState("twitter");
   const [socialTopic, setSocialTopic] = useState("");
@@ -157,8 +156,13 @@ const ContentGenerator = () => {
   };
 
   const handleGenerate = async (type: string) => {
-    if (!hasApiKey) {
-      alert("Content Generator API key not found. Please add VITE_GEMINI_CONTENT_GENERATOR_API_KEY to your environment variables.");
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      toast({
+        title: "API Key Missing",
+        description: "Please set VITE_GEMINI_API_KEY in your .env file",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -166,21 +170,33 @@ const ContentGenerator = () => {
     switch (type) {
       case "blog":
         if (!blogTopic.trim()) {
-          alert("Please enter a blog topic");
+          toast({
+            title: "Input Required",
+            description: "Please enter a blog topic",
+            variant: "destructive"
+          });
           return;
         }
         prompt = await generateBlogPost();
         break;
       case "email":
         if (!emailSubject.trim() || !emailContext.trim()) {
-          alert("Please enter email subject and context");
+          toast({
+            title: "Input Required",
+            description: "Please enter email subject and context",
+            variant: "destructive"
+          });
           return;
         }
         prompt = await generateEmail();
         break;
       case "social":
         if (!socialTopic.trim()) {
-          alert("Please enter a social media topic");
+          toast({
+            title: "Input Required",
+            description: "Please enter a social media topic",
+            variant: "destructive"
+          });
           return;
         }
         prompt = await generateSocialPost();
@@ -193,13 +209,29 @@ const ContentGenerator = () => {
     setCurrentProvider("Generating...");
     
     try {
-      const content = await aiApiManager.makeRequest('content-generator', prompt);
-      
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "text/plain" }
+      });
+
+      const result = await model.generateContent(prompt);
+      const content = result.response.text();
+
       setGeneratedContent(content);
       setCurrentProvider("Generated using Gemini API");
+      toast({
+        title: "Content Generated",
+        description: `Successfully generated ${type} content`
+      });
     } catch (error) {
       console.error("Content generation error:", error);
-      alert("Error generating content. Please check your API key and try again.");
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Error generating content. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
       setCurrentProvider("Error occurred");
     } finally {
       setIsGenerating(false);
@@ -208,6 +240,10 @@ const ContentGenerator = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Content copied to clipboard"
+    });
   };
 
   return (
@@ -238,11 +274,7 @@ const ContentGenerator = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Content Settings</span>
-                  {!hasApiKey ? (
-                    <span className="text-sm text-destructive">⚠️ Content Generator API Key Missing</span>
-                  ) : (
-                    <span className="text-sm text-primary">✓ Content Generator Ready</span>
-                  )}
+                  <span className="text-sm text-primary">✓ Content Generator Ready</span>
                 </CardTitle>
                 <CardDescription>
                   Choose content type and customize your requirements
@@ -309,7 +341,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("blog")} 
-                      disabled={isGenerating || !hasApiKey || !blogTopic}
+                      disabled={isGenerating || !blogTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Blog Post"}
@@ -353,7 +385,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("email")} 
-                      disabled={isGenerating || !hasApiKey || !emailSubject || !emailContext}
+                      disabled={isGenerating || !emailSubject || !emailContext}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Email"}
@@ -404,7 +436,7 @@ const ContentGenerator = () => {
                     </div>
                     <Button 
                       onClick={() => handleGenerate("social")} 
-                      disabled={isGenerating || !hasApiKey || !socialTopic}
+                      disabled={isGenerating || !socialTopic}
                       className="w-full"
                     >
                       {isGenerating ? "Generating..." : "Generate Social Post"}

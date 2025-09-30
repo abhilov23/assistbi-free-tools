@@ -69,6 +69,14 @@ const PDFExporter = () => {
     const margin = 20;
     const maxWidth = pageWidth - 2 * margin;
     
+    pdf.setProperties({
+      title: '',
+      subject: '',
+      author: '',
+      keywords: '',
+      creator: ''
+    });
+    
     // Title
     pdf.setFontSize(16);
     pdf.setFont(undefined, 'bold');
@@ -114,32 +122,28 @@ const PDFExporter = () => {
         const margin = 20;
         const maxWidth = pageWidth - 2 * margin;
         
+        pdf.setProperties({
+          title: '',
+          subject: '',
+          author: '',
+          keywords: '',
+          creator: ''
+        });
+        
         // Header
         pdf.setFontSize(20);
         pdf.setFont(undefined, 'bold');
-        pdf.text(`Converted: ${file.name}`, pageWidth / 2, 30, { align: 'center' });
-        
-        // File information
-        pdf.setFontSize(12);
-        pdf.setFont(undefined, 'normal');
-        pdf.text(`Original file: ${file.name}`, margin, 50);
-        pdf.text(`File type: ${fileInfo?.type || 'Unknown'}`, margin, 65);
-        pdf.text(`File size: ${fileInfo?.size || '0'} MB`, margin, 80);
-        pdf.text(`Conversion date: ${new Date().toLocaleDateString()}`, margin, 95);
-        
-        // Content header
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.text("Extracted Content:", margin, 120);
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        pdf.text(fileName, pageWidth / 2, 30, { align: 'center' });
         
         // Add extracted content
-        pdf.setFontSize(10);
+        pdf.setFontSize(12);
         pdf.setFont(undefined, 'normal');
         
         if (extractedContent && extractedContent.trim()) {
           const lines = pdf.splitTextToSize(extractedContent, maxWidth);
-          let yPosition = 135;
-          const lineHeight = 5;
+          let yPosition = 50;
+          const lineHeight = 7;
           
           for (let i = 0; i < lines.length; i++) {
             if (yPosition + lineHeight > pageHeight - margin) {
@@ -150,10 +154,9 @@ const PDFExporter = () => {
             yPosition += lineHeight;
           }
         } else {
-          pdf.text("No content could be extracted from this file.", margin, 135);
+          pdf.text("No content could be extracted from this file.", margin, 50);
         }
         
-        const fileName = file.name.replace(/\.[^/.]+$/, "");
         pdf.save(`converted-${fileName}.pdf`);
       }
     } catch (error) {

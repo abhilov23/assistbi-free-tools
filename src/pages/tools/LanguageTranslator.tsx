@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Languages, ArrowRightLeft, Copy, Volume2, VolumeX } from "lucide-react";
-import { aiApiManager } from "@/lib/ai-api-manager";
 import { useToast } from "@/hooks/use-toast";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const LanguageTranslator = () => {
   const { toast } = useToast();
@@ -19,9 +18,6 @@ const LanguageTranslator = () => {
   const [targetLang, setTargetLang] = useState("es");
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-
-  // Check if Language Translator has API key
-  const hasApiKey = aiApiManager.hasKey('translator');
 
   const languages = [
     { code: "auto", name: "Auto-detect" },
@@ -97,10 +93,11 @@ const LanguageTranslator = () => {
   ];
 
   const handleTranslate = async () => {
-    if (!hasApiKey) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
       toast({
         title: "API Key Missing",
-        description: "Language Translator API key not found. Please add your Gemini API key.",
+        description: "Please set VITE_GEMINI_API_KEY in your .env file",
         variant: "destructive"
       });
       return;
@@ -116,8 +113,14 @@ const LanguageTranslator = () => {
     }
 
     setIsTranslating(true);
-    
+
     try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "text/plain" }
+      });
+
       const sourceLangName = languages.find(lang => lang.code === sourceLang)?.name || "auto-detect";
       const targetLangName = languages.find(lang => lang.code === targetLang)?.name || "English";
 
@@ -125,8 +128,9 @@ const LanguageTranslator = () => {
 
 "${inputText}"`;
 
-      const translation = await aiApiManager.makeRequest('translator', prompt);
-      
+      const result = await model.generateContent(prompt);
+      const translation = result.response.text();
+
       setTranslatedText(translation.trim());
       toast({
         title: "Translation Complete",
@@ -164,26 +168,26 @@ const LanguageTranslator = () => {
 
   const handleTextToSpeech = (text: string, lang: string) => {
     if (isSpeaking) {
-      speechSynthesis.cancel();
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
 
     if ('speechSynthesis' in window && text) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
+      utterance.lang = lang === "auto" ? targetLang : lang;
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
-      
+
       setIsSpeaking(true);
-      speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
@@ -204,14 +208,10 @@ const LanguageTranslator = () => {
           {/* Translation Interface */}
           <Card className="shadow-elegant border-2 bg-card/50 backdrop-blur-sm animate-fade-in">
             <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Translation</span>
-                  {!hasApiKey ? (
-                    <span className="text-sm text-destructive">⚠️ Translator API Key Missing</span>
-                  ) : (
-                    <span className="text-sm text-primary">✓ Translator Ready</span>
-                  )}
-                </CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Translation</span>
+                <span className="text-sm text-primary">✓ Translator Ready</span>
+              </CardTitle>
               <CardDescription>
                 Select languages and enter text to translate
               </CardDescription>
@@ -333,7 +333,7 @@ const LanguageTranslator = () => {
               {/* Translate Button */}
               <Button 
                 onClick={handleTranslate} 
-                disabled={isTranslating || !hasApiKey || !inputText}
+                disabled={isTranslating || !inputText}
                 className="w-full"
                 size="lg"
               >
@@ -353,7 +353,7 @@ const LanguageTranslator = () => {
           </Card>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

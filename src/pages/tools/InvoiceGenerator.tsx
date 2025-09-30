@@ -105,7 +105,7 @@ const InvoiceGenerator = () => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
-    const currencySymbol = currency.charAt(currency.length - 2) === '(' ? currency.slice(-2, -1) : '$';
+    const currencySymbol = currency.includes('(') ? currency.split('(')[1].slice(0, -1) : '$';
     
     // Colors
     const primaryColor = [54, 73, 93] as const; // Dark blue-gray
@@ -131,15 +131,17 @@ const InvoiceGenerator = () => {
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(28);
     pdf.setFont(undefined, 'bold');
-    pdf.text("TAX INVOICE", pageWidth - margin, 35, { align: 'right' });
+    pdf.text("INVOICE", pageWidth - margin, 35, { align: 'right' });
     
     yPosition = 80;
     
-    // Invoice Number and Details Box
+    // Invoice Number and Details Box - Dynamic height
+    const hasDueDate = !!dueDate;
+    const boxHeight = hasDueDate ? 60 : 40;
     pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    pdf.rect(pageWidth - 80, yPosition - 10, 60, 40, 'F');
+    pdf.rect(pageWidth - 80, yPosition - 10, 60, boxHeight, 'F');
     pdf.setDrawColor(200, 200, 200);
-    pdf.rect(pageWidth - 80, yPosition - 10, 60, 40, 'S');
+    pdf.rect(pageWidth - 80, yPosition - 10, 60, boxHeight, 'S');
     
     pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
     pdf.setFontSize(10);
@@ -149,48 +151,53 @@ const InvoiceGenerator = () => {
     pdf.text(invoiceNumber, pageWidth - 75, yPosition + 8);
     
     pdf.setFont(undefined, 'bold');
-    pdf.text("Invoice Date", pageWidth - 75, yPosition + 18);
+    pdf.text("Invoice Date", pageWidth - 75, yPosition + 16);
     pdf.setFont(undefined, 'normal');
-    pdf.text(date, pageWidth - 75, yPosition + 26);
+    pdf.text(date, pageWidth - 75, yPosition + 24);
     
-    if (dueDate) {
+    if (hasDueDate) {
       pdf.setFont(undefined, 'bold');
-      pdf.text("Due Date", pageWidth - 75, yPosition + 36);
+      pdf.text("Due Date", pageWidth - 75, yPosition + 32);
       pdf.setFont(undefined, 'normal');
-      // Adjust text size if due date is long
-      pdf.text(dueDate.length > 10 ? dueDate.substring(0, 10) : dueDate, pageWidth - 75, yPosition + 44);
+      pdf.text(dueDate, pageWidth - 75, yPosition + 40);
     }
     
     // Company Information (From)
     pdf.setFontSize(12);
     pdf.setFont(undefined, 'bold');
     pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
+    let fromY = yPosition;
     if (fromCompany) {
-      pdf.text(fromCompany, margin, yPosition);
-      yPosition += 8;
+      pdf.text(fromCompany, margin, fromY);
+      fromY += 8;
     }
     
     pdf.setFontSize(9);
     pdf.setFont(undefined, 'normal');
     if (fromAddress) {
-      pdf.text(fromAddress, margin, yPosition);
-      yPosition += 6;
+      pdf.text(fromAddress, margin, fromY);
+      fromY += 6;
     }
     if (fromCityState) {
-      pdf.text(fromCityState, margin, yPosition);
-      yPosition += 6;
+      pdf.text(fromCityState, margin, fromY);
+      fromY += 6;
     }
     if (fromZip) {
-      pdf.text(fromZip, margin, yPosition);
+      pdf.text(fromZip, margin, fromY);
+      fromY += 6;
     }
     
-    yPosition = 140;
+    // Set yPosition to max of fromY and details box bottom
+    const detailsBottom = yPosition - 10 + boxHeight + 10; // Buffer
+    yPosition = Math.max(fromY + 20, detailsBottom); // Add space after from/details
     
     // Bill To and Ship To Section
     const billToX = margin;
     const shipToX = pageWidth / 2 + 10;
+    let billYPosition = yPosition + 15;
+    let shipYPosition = yPosition + 15;
     
-    // Bill To
+    // Bill To Header
     pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     pdf.rect(billToX, yPosition, (pageWidth / 2) - 10, 8, 'F');
     pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -198,40 +205,38 @@ const InvoiceGenerator = () => {
     pdf.setFont(undefined, 'bold');
     pdf.text("BILL TO:", billToX + 5, yPosition + 6);
     
-    yPosition += 15;
     pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
     pdf.setFontSize(9);
     pdf.setFont(undefined, 'normal');
     
     if (billToCompany) {
       pdf.setFont(undefined, 'bold');
-      pdf.text(billToCompany, billToX, yPosition);
+      pdf.text(billToCompany, billToX, billYPosition);
       pdf.setFont(undefined, 'normal');
-      yPosition += 6;
+      billYPosition += 6;
     }
     if (billToAddress) {
-      pdf.text(billToAddress, billToX, yPosition);
-      yPosition += 6;
+      pdf.text(billToAddress, billToX, billYPosition);
+      billYPosition += 6;
     }
     if (billToCityState) {
-      pdf.text(billToCityState, billToX, yPosition);
-      yPosition += 6;
+      pdf.text(billToCityState, billToX, billYPosition);
+      billYPosition += 6;
     }
     if (billToZip) {
-      pdf.text(billToZip, billToX, yPosition);
+      pdf.text(billToZip, billToX, billYPosition);
+      billYPosition += 6;
     }
     
     // Ship To (if different)
-    if (shipToCompany || shipToAddress) {
-      let shipYPosition = 148;
+    if (shipToCompany || shipToAddress || shipToCityState || shipToZip) {
       pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-      pdf.rect(shipToX, 140, (pageWidth / 2) - 30, 8, 'F');
+      pdf.rect(shipToX, yPosition, (pageWidth / 2) - 30, 8, 'F');
       pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'bold');
-      pdf.text("SHIP TO:", shipToX + 5, 146);
+      pdf.text("SHIP TO:", shipToX + 5, yPosition + 6);
       
-      shipYPosition += 7;
       pdf.setTextColor(textColor[0], textColor[1], textColor[2]);
       pdf.setFontSize(9);
       pdf.setFont(undefined, 'normal');
@@ -252,10 +257,12 @@ const InvoiceGenerator = () => {
       }
       if (shipToZip) {
         pdf.text(shipToZip, shipToX, shipYPosition);
+        shipYPosition += 6;
       }
     }
     
-    yPosition = 200;
+    // Set yPosition to max of bill and ship bottoms
+    yPosition = Math.max(billYPosition, shipYPosition) + 20;
     
     // Items Table
     const tableStartY = yPosition;
@@ -270,9 +277,9 @@ const InvoiceGenerator = () => {
     pdf.setFontSize(10);
     pdf.setFont(undefined, 'bold');
     pdf.text("DESCRIPTION", colPositions[0] + 3, tableStartY + 8);
-    pdf.text("QTY", colPositions[1] + 3, tableStartY + 8);
-    pdf.text("RATE", colPositions[2] + 3, tableStartY + 8);
-    pdf.text("AMOUNT", colPositions[3] + 3, tableStartY + 8);
+    pdf.text("QTY", colPositions[1] + (colWidths[1] / 2), tableStartY + 8, { align: 'center' });
+    pdf.text("RATE", colPositions[2] + colWidths[2] - 3, tableStartY + 8, { align: 'right' });
+    pdf.text("AMOUNT", colPositions[3] + colWidths[3] - 3, tableStartY + 8, { align: 'right' });
     
     yPosition = tableStartY + 12;
     
@@ -284,7 +291,9 @@ const InvoiceGenerator = () => {
     const validItems = items.filter(item => item.description.trim());
     
     validItems.forEach((item, index) => {
-      const rowHeight = 12;
+      const descLines = pdf.splitTextToSize(item.description, colWidths[0] - 6);
+      const lineHeight = 5;
+      const rowHeight = Math.max(12, descLines.length * lineHeight + 6);
       const isEvenRow = index % 2 === 0;
       
       // Alternate row background
@@ -297,12 +306,18 @@ const InvoiceGenerator = () => {
       pdf.setDrawColor(220, 220, 220);
       pdf.line(margin, yPosition, pageWidth - margin, yPosition);
       
-      // Cell content
-      const descLines = pdf.splitTextToSize(item.description, colWidths[0] - 6);
-      pdf.text(descLines[0], colPositions[0] + 3, yPosition + 8);
-      pdf.text(item.quantity.toString(), colPositions[1] + 3, yPosition + 8);
-      pdf.text(`${currencySymbol}${item.rate.toFixed(2)}`, colPositions[2] + 3, yPosition + 8);
-      pdf.text(`${currencySymbol}${(item.quantity * item.rate).toFixed(2)}`, colPositions[3] + 3, yPosition + 8);
+      // Description (multi-line)
+      let descY = yPosition + 6;
+      descLines.forEach((line: string) => {
+        pdf.text(line, colPositions[0] + 3, descY);
+        descY += lineHeight;
+      });
+      
+      // Other cells (centered or right-aligned, vertically centered)
+      const cellY = yPosition + (rowHeight / 2) + 1; // Approximate vertical center
+      pdf.text(item.quantity.toString(), colPositions[1] + (colWidths[1] / 2), cellY, { align: 'center' });
+      pdf.text(`${currencySymbol}${item.rate.toFixed(2)}`, colPositions[2] + colWidths[2] - 3, cellY, { align: 'right' });
+      pdf.text(`${currencySymbol}${(item.quantity * item.rate).toFixed(2)}`, colPositions[3] + colWidths[3] - 3, cellY, { align: 'right' });
       
       yPosition += rowHeight;
     });
@@ -314,7 +329,9 @@ const InvoiceGenerator = () => {
     yPosition += 20;
     
     // Totals Section
-    const totalsX = pageWidth - 80;
+    const totalsWidth = 100;
+    const labelX = pageWidth - margin - totalsWidth;
+    const valueX = pageWidth - margin;
     const subtotal = calculateSubtotal();
     const taxAmount = (subtotal * tax) / 100;
     const total = calculateTotal();
@@ -323,42 +340,42 @@ const InvoiceGenerator = () => {
     
     // Subtotal
     pdf.setFont(undefined, 'normal');
-    pdf.text("Subtotal:", totalsX - 30, yPosition);
-    pdf.text(`${currencySymbol}${subtotal.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+    pdf.text("Subtotal:", labelX, yPosition, { align: 'left' });
+    pdf.text(`${currencySymbol}${subtotal.toFixed(2)}`, valueX, yPosition, { align: 'right' });
     yPosition += 8;
     
     // Tax
     if (tax > 0) {
-      pdf.text(`Tax (${tax}%):`, totalsX - 30, yPosition);
-      pdf.text(`${currencySymbol}${taxAmount.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      pdf.text(`Tax (${tax}%):`, labelX, yPosition, { align: 'left' });
+      pdf.text(`${currencySymbol}${taxAmount.toFixed(2)}`, valueX, yPosition, { align: 'right' });
       yPosition += 8;
     }
     
     // Discount
     if (discount > 0) {
       pdf.setTextColor(220, 53, 69); // Red color for discount
-      pdf.text("Discount:", totalsX - 30, yPosition);
-      pdf.text(`-${currencySymbol}${discount.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      pdf.text("Discount:", labelX, yPosition, { align: 'left' });
+      pdf.text(`-${currencySymbol}${discount.toFixed(2)}`, valueX, yPosition, { align: 'right' });
       yPosition += 8;
       pdf.setTextColor(textColor[0], textColor[1], textColor[2]); // Reset color
     }
     
     // Shipping
     if (shipping > 0) {
-      pdf.text("Shipping:", totalsX - 30, yPosition);
-      pdf.text(`${currencySymbol}${shipping.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+      pdf.text("Shipping:", labelX, yPosition, { align: 'left' });
+      pdf.text(`${currencySymbol}${shipping.toFixed(2)}`, valueX, yPosition, { align: 'right' });
       yPosition += 8;
     }
     
     // Total
     pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    pdf.line(totalsX - 35, yPosition, totalsX + 5, yPosition);
+    pdf.line(labelX, yPosition, valueX, yPosition);
     yPosition += 5;
     
     pdf.setFont(undefined, 'bold');
     pdf.setFontSize(12);
-    pdf.text("TOTAL:", totalsX - 30, yPosition);
-    pdf.text(`${currencySymbol}${total.toFixed(2)}`, totalsX, yPosition, { align: 'right' });
+    pdf.text("TOTAL:", labelX, yPosition, { align: 'left' });
+    pdf.text(`${currencySymbol}${total.toFixed(2)}`, valueX, yPosition, { align: 'right' });
     
     // Notes Section
     if (notes) {
@@ -376,12 +393,15 @@ const InvoiceGenerator = () => {
       pdf.setFont(undefined, 'normal');
       pdf.setFontSize(9);
       const noteLines = pdf.splitTextToSize(notes, pageWidth - (margin * 2));
-      pdf.text(noteLines, margin, yPosition);
+      noteLines.forEach((line: string, index: number) => {
+        pdf.text(line, margin, yPosition + (index * 6));
+      });
+      yPosition += noteLines.length * 6;
     }
     
     // Payment Terms
     if (paymentTerms) {
-      yPosition += (notes ? 20 : 30);
+      yPosition += 20;
       if (yPosition > pageHeight - 30) {
         pdf.addPage();
         yPosition = 30;
