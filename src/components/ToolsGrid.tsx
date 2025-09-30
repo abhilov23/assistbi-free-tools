@@ -16,8 +16,8 @@ import {
 
 const toolsData = [
   {
-    title: "PDF to Word/Excel Converter",
-    description: "Convert PDF files to editable Word documents or Excel spreadsheets instantly.",
+    title: "Color Palette Tool",
+    description: "Choose and create beautiful color palettes for your designs.",
     icon: FileText,
     href: "/tools/pdf-converter",
     color: "primary",

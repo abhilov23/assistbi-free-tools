@@ -21,6 +21,8 @@ import ImageBackgroundRemover from "./pages/tools/ImageBackgroundRemover";
 import LanguageTranslator from "./pages/tools/LanguageTranslator";
 import ContentGenerator from "./pages/tools/ContentGenerator";
 import PasswordGenerator from "./pages/tools/PasswordGenerator";
+import ColorPaletteTool from "./pages/tools/ColorPaletteTool";
+
 
 const queryClient = new QueryClient();
 
@@ -36,7 +38,7 @@ const App = () => (
             <Route path="/tools" element={<AllTools />} />
             <Route path="/support" element={<Support />} />
             <Route path="/about" element={<About />} />
-            <Route path="/tools/pdf-converter" element={<PDFConverter />} />
+            <Route path="/tools/pdf-converter" element={<ColorPaletteTool/>} />
             <Route path="/tools/qr-generator" element={<QRGenerator />} />
             <Route path="/tools/invoice-generator" element={<InvoiceGenerator />} />
             <Route path="/tools/pdf-exporter" element={<PDFExporter />} />
