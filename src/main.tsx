@@ -2,14 +2,13 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// CRITICAL FIX: Configure PDF.js worker globally
-// This fixes all PDF-related tools (converter, exporter, etc.)
-import * as pdfjsLib from 'pdfjs-dist';
+// ✅ Use the build meant for browsers
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 
-// Use CDN worker to avoid bundling issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// ✅ Configure global worker from CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-// Log confirmation (remove in production)
-console.log('PDF.js worker configured:', pdfjsLib.GlobalWorkerOptions.workerSrc);
+console.log("PDF.js worker configured:", pdfjsLib.GlobalWorkerOptions.workerSrc);
 
 createRoot(document.getElementById("root")!).render(<App />);
